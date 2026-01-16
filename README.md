@@ -30,9 +30,9 @@ Cuentas Claras es una aplicación web progresiva (PWA) diseñada para simplifica
 
 # 🚀 Cómo Usar
 
-Descarga o clona el repositorio.
+* Descarga o clona el repositorio.
 
-Abre el archivo index.html en cualquier navegador web moderno (Chrome, Safari, Edge).
+* Abre el archivo index.html en cualquier navegador web moderno (Chrome, Safari, Edge).
 
 ¡Empieza a crear cuentas y dividir gastos! No requiere instalación ni servidor backend.
 
