@@ -14,6 +14,10 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Librerías para Exportar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -92,14 +96,20 @@
                     <i data-lucide="arrow-left" class="w-6 h-6"></i>
                 </button>
                 <div>
-                    <h2 id="acc-title" class="text-xl font-bold leading-tight truncate max-w-[200px]">Cuenta</h2>
+                    <h2 id="acc-title" class="text-xl font-bold leading-tight truncate max-w-[150px]">Cuenta</h2>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Detalles de gastos</p>
                 </div>
             </div>
-            <!-- Botón Eliminar en detalle también -->
-            <button onclick="app.deleteCurrentAccount()" class="p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 dark:hover:bg-red-900/20 transition">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
-            </button>
+            <div class="flex gap-2">
+                <!-- Botón Exportar -->
+                <button onclick="app.showExportModal()" class="p-2 rounded-full hover:bg-indigo-50 text-gray-400 hover:text-primary dark:hover:bg-indigo-900/20 transition" title="Exportar Resumen">
+                    <i data-lucide="share-2" class="w-5 h-5"></i>
+                </button>
+                <!-- Botón Eliminar -->
+                <button onclick="app.deleteCurrentAccount()" class="p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 dark:hover:bg-red-900/20 transition">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            </div>
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -110,10 +120,10 @@
                 <h3 id="acc-total" class="text-4xl font-bold tracking-tight">$0</h3>
             </div>
 
-            <!-- BOTÓN CALCULAR -->
-            <button onclick="app.calculateBalances()" class="w-full bg-white dark:bg-cardDark border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition ios-btn">
-                <i data-lucide="calculator" class="w-5 h-5 text-primary"></i>
-                Calcular División
+            <!-- BOTÓN NUEVO GASTO -->
+            <button onclick="app.showAddExpenseModal()" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/30 ios-btn flex items-center justify-center gap-2">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+                Nuevo Gasto
             </button>
 
             <!-- Sección Participantes -->
@@ -141,11 +151,11 @@
             </div>
         </main>
 
-        <!-- Botón flotante Nuevo Gasto -->
-        <div class="p-4 bg-white dark:bg-cardDark border-t border-gray-100 dark:border-gray-800 absolute bottom-0 w-full">
-            <button onclick="app.showAddExpenseModal()" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/30 ios-btn flex items-center justify-center gap-2">
-                <i data-lucide="receipt" class="w-5 h-5"></i>
-                Nuevo Gasto
+        <!-- Botón flotante Calcular -->
+        <div class="p-4 bg-white dark:bg-cardDark border-t border-gray-100 dark:border-gray-800 absolute bottom-0 w-full z-20">
+            <button onclick="app.calculateBalances()" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition ios-btn">
+                <i data-lucide="calculator" class="w-5 h-5 text-primary"></i>
+                Calcular División
             </button>
         </div>
     </div>
@@ -174,6 +184,47 @@
     </div>
 
     <!-- MODALES VARIOS -->
+
+    <!-- Export Modal -->
+    <div id="modal-export" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-cardDark w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-export-panel">
+            <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden"></div>
+            <h2 class="text-xl font-bold mb-4 dark:text-white">Exportar Detalle</h2>
+            <div class="space-y-3">
+                <button onclick="app.exportText()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
+                    <div class="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full text-primary">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-left">
+                        <h4 class="font-bold text-gray-900 dark:text-white">Como Texto</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Copiar al portapapeles o WhatsApp</p>
+                    </div>
+                </button>
+                
+                <button onclick="app.exportImage()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
+                    <div class="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full text-secondary">
+                        <i data-lucide="image" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-left">
+                        <h4 class="font-bold text-gray-900 dark:text-white">Como Imagen</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Descargar resumen visual (PNG)</p>
+                    </div>
+                </button>
+                
+                <button onclick="app.exportPDF()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full text-red-500">
+                        <i data-lucide="file" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-left">
+                        <h4 class="font-bold text-gray-900 dark:text-white">Como PDF</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Documento estilo hoja A4</p>
+                    </div>
+                </button>
+            </div>
+            <button onclick="app.closeExportModal()" class="w-full mt-6 text-gray-500 py-3 font-medium">Cancelar</button>
+        </div>
+    </div>
+
     <!-- Add Account -->
     <div id="modal-add-account" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white dark:bg-cardDark w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-add-account-panel">
@@ -275,7 +326,7 @@
         const store = {
             accounts: JSON.parse(localStorage.getItem('cc_accounts')) || [],
             categories: JSON.parse(localStorage.getItem('cc_categories')) || defaultCategories,
-            theme: localStorage.getItem('cc_theme') || 'dark', // Changed to dark by default
+            theme: localStorage.getItem('cc_theme') || 'dark', 
             currentAccountId: null
         };
 
@@ -348,6 +399,294 @@
                 setTimeout(() => modal.classList.add('hidden'), 200);
             },
 
+            // --- HELPERS DE CALCULO ---
+            getDebts: (acc) => {
+                if (!acc || !acc.participants.length || !acc.expenses.length) {
+                    return { transactions: [], share: 0, total: 0 };
+                }
+
+                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+                const share = total / acc.participants.length;
+
+                const balances = {};
+                acc.participants.forEach(p => balances[p.name] = -share);
+                acc.expenses.forEach(e => balances[e.payer] = (balances[e.payer] || 0) + Number(e.amount));
+
+                if (acc.payments) {
+                    acc.payments.forEach(p => {
+                        if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
+                        if (balances[p.to] !== undefined) balances[p.to] -= Number(p.amount);
+                    });
+                }
+
+                let debtors = [];
+                let creditors = [];
+                for (const [name, amount] of Object.entries(balances)) {
+                    if (amount < -0.01) debtors.push({ name, amount: Math.abs(amount) });
+                    else if (amount > 0.01) creditors.push({ name, amount });
+                }
+                debtors.sort((a, b) => b.amount - a.amount);
+                creditors.sort((a, b) => b.amount - a.amount);
+
+                const transactions = [];
+                let i = 0, j = 0;
+                while (i < debtors.length && j < creditors.length) {
+                    let amount = Math.min(debtors[i].amount, creditors[j].amount);
+                    if (amount > 0.01) {
+                        transactions.push({ from: debtors[i].name, to: creditors[j].name, amount });
+                    }
+                    debtors[i].amount -= amount;
+                    creditors[j].amount -= amount;
+                    if (debtors[i].amount < 0.01) i++;
+                    if (creditors[j].amount < 0.01) j++;
+                }
+                return { transactions, share, total };
+            },
+
+            isAccountSettled: (acc) => {
+                if (!acc.expenses || acc.expenses.length === 0) return false;
+                if (!acc.participants || acc.participants.length === 0) return false;
+
+                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+                if (total === 0) return true;
+                
+                const share = total / acc.participants.length;
+
+                const balances = {};
+                acc.participants.forEach(p => balances[p.name] = -share);
+                acc.expenses.forEach(e => balances[e.payer] = (balances[e.payer] || 0) + Number(e.amount));
+
+                if (acc.payments) {
+                    acc.payments.forEach(p => {
+                        if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
+                        if (balances[p.to] !== undefined) balances[p.to] -= Number(p.amount);
+                    });
+                }
+                return Object.values(balances).every(b => Math.abs(b) < 1.0);
+            },
+
+            // --- EXPORT LOGIC ---
+            showExportModal: () => {
+                const modal = document.getElementById('modal-export');
+                const panel = document.getElementById('modal-export-panel');
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
+            },
+            closeExportModal: () => {
+                const modal = document.getElementById('modal-export');
+                const panel = document.getElementById('modal-export-panel');
+                modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            exportText: async () => {
+                const acc = store.accounts.find(a => a.id === store.currentAccountId);
+                if (!acc) return;
+                
+                const { transactions, total } = app.getDebts(acc);
+
+                let text = `📋 *${acc.name}*\n`;
+                text += `💰 Total: ${utils.formatCurrency(total)}\n\n`;
+                
+                text += `👥 *Participantes:*\n`;
+                acc.participants.forEach(p => text += `- ${p.name}\n`);
+                
+                text += `\n🧾 *Gastos:*\n`;
+                acc.expenses.forEach(e => text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} (${e.payer})\n`);
+                
+                if (acc.payments && acc.payments.length > 0) {
+                    text += `\n💸 *Pagos ya realizados:*\n`;
+                    acc.payments.forEach(p => text += `- ${p.from} -> ${p.to}: ${utils.formatCurrency(p.amount)}\n`);
+                }
+
+                text += `\n⚖️ *División Sugerida (Quién le debe a quién):*\n`;
+                if (transactions.length === 0) {
+                    text += `✅ ¡Cuentas saldadas! Nadie debe nada.\n`;
+                } else {
+                    transactions.forEach(t => text += `👉 ${t.from} paga a ${t.to}: ${utils.formatCurrency(t.amount)}\n`);
+                }
+
+                try {
+                    await navigator.clipboard.writeText(text);
+                    utils.showToast("Copiado al portapapeles");
+                } catch (err) {
+                    console.error("Error al copiar", err);
+                }
+
+                if (navigator.share) {
+                    navigator.share({ title: acc.name, text: text }).catch(console.error);
+                }
+                
+                app.closeExportModal();
+            },
+
+            exportImage: async () => {
+                const acc = store.accounts.find(a => a.id === store.currentAccountId);
+                if (!acc) return;
+                
+                const { transactions, total } = app.getDebts(acc);
+
+                utils.showToast("Generando imagen...");
+                const el = document.createElement('div');
+                el.style.width = '600px';
+                el.style.backgroundColor = '#ffffff';
+                el.style.color = '#1f2937';
+                el.style.padding = '40px';
+                el.style.fontFamily = 'sans-serif';
+                el.style.position = 'absolute';
+                el.style.left = '-9999px';
+                el.style.zIndex = '-100';
+                
+                let html = `<h1 style="font-size: 32px; font-weight: bold; color: #4F46E5; margin-bottom: 8px;">${acc.name}</h1>`;
+                html += `<p style="color: #6b7280; margin-bottom: 24px;">Resumen de gastos - Cuentas Claras</p>`;
+                
+                html += `<div style="background: #e0e7ff; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                    <p style="font-size: 14px; color: #4338ca; font-weight: bold; margin: 0;">TOTAL GASTADO</p>
+                    <p style="font-size: 36px; font-weight: bold; color: #312e81; margin: 0;">${utils.formatCurrency(total)}</p>
+                </div>`;
+                
+                html += `<div style="margin-bottom: 24px;"><p style="font-weight:bold; margin-bottom:5px;">Participantes:</p><p style="color:#4b5563;">${acc.participants.map(p => p.name).join(', ')}</p></div>`;
+
+                html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px;">Gastos</h3>`;
+                acc.expenses.forEach(e => {
+                    html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
+                        <div><span style="font-weight: bold;">${e.desc}</span> <span style="font-size: 14px; color: #6b7280;">(${e.payer})</span></div>
+                        <div style="font-weight: bold;">${utils.formatCurrency(e.amount)}</div>
+                    </div>`;
+                });
+
+                html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px; margin-top: 30px; color: #dc2626;">División (A Pagar)</h3>`;
+                if (transactions.length === 0) {
+                    html += `<p style="color: #059669; font-weight: bold;">✅ Cuentas Saldadas</p>`;
+                } else {
+                    transactions.forEach(t => {
+                        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
+                            <div>${t.from} <span style="color:#9ca3af">➡</span> ${t.to}</div>
+                            <div style="font-weight: bold; color: #dc2626;">${utils.formatCurrency(t.amount)}</div>
+                        </div>`;
+                    });
+                }
+
+                el.innerHTML = html;
+                document.body.appendChild(el);
+                
+                await document.fonts.ready;
+
+                const canvas = await html2canvas(el, { scale: 2 });
+                document.body.removeChild(el);
+                
+                const link = document.createElement('a');
+                link.download = `Resumen-${acc.name.replace(/\s+/g, '-')}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                app.closeExportModal();
+            },
+
+            exportPDF: () => {
+                const acc = store.accounts.find(a => a.id === store.currentAccountId);
+                if (!acc) return;
+                
+                const { transactions, total } = app.getDebts(acc);
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let y = 20;
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(22);
+                doc.setTextColor(79, 70, 229); 
+                doc.text(acc.name, 20, y);
+                y += 10;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.setFont("helvetica", "normal");
+                doc.text("Resumen de Cuentas Claras", 20, y);
+                y += 15;
+                
+                doc.setFillColor(240, 240, 240);
+                doc.rect(20, y, 170, 25, 'F');
+                doc.setFontSize(12);
+                doc.setTextColor(60);
+                doc.text("Total Gastado", 30, y + 10);
+                doc.setFontSize(18);
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text(utils.formatCurrency(total), 30, y + 20);
+                y += 35;
+
+                doc.setFontSize(12);
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text("Participantes:", 20, y);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(80);
+                const participantsStr = acc.participants.map(p => p.name).join(', ');
+                const splitText = doc.splitTextToSize(participantsStr, 170);
+                doc.text(splitText, 55, y);
+                y += (splitText.length * 7) + 10;
+
+                doc.setFontSize(14);
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "bold");
+                doc.text("Detalle de Gastos", 20, y);
+                doc.setDrawColor(200);
+                doc.line(20, y+2, 190, y+2);
+                y += 15;
+                
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "normal");
+                
+                acc.expenses.forEach(e => {
+                    if (y > 270) { doc.addPage(); y = 20; }
+                    doc.text(`${e.desc} (Pagó ${e.payer})`, 20, y);
+                    const amountStr = utils.formatCurrency(e.amount);
+                    const width = doc.getTextWidth(amountStr);
+                    doc.text(amountStr, 190 - width, y);
+                    y += 10;
+                });
+
+                y += 10;
+                if (y > 250) { doc.addPage(); y = 20; }
+                
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(220, 38, 38);
+                doc.text("División Sugerida (A Pagar)", 20, y);
+                doc.setDrawColor(220, 38, 38);
+                doc.line(20, y+2, 190, y+2);
+                y += 15;
+
+                doc.setFontSize(12);
+                doc.setTextColor(0);
+                doc.setFont("helvetica", "normal");
+
+                if (transactions.length === 0) {
+                    doc.setTextColor(5, 150, 105);
+                    doc.text("✅ Todas las cuentas están saldadas.", 20, y);
+                } else {
+                    transactions.forEach(t => {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        doc.text(`${t.from}`, 20, y);
+                        doc.setTextColor(150);
+                        doc.text("pagar a ->", 70, y);
+                        doc.setTextColor(0);
+                        doc.text(`${t.to}`, 110, y);
+                        
+                        const amountStr = utils.formatCurrency(t.amount);
+                        const width = doc.getTextWidth(amountStr);
+                        doc.setFont("helvetica", "bold");
+                        doc.text(amountStr, 190 - width, y);
+                        doc.setFont("helvetica", "normal");
+                        y += 10;
+                    });
+                }
+                
+                doc.save(`Reporte-${acc.name.replace(/\s+/g, '-')}.pdf`);
+                app.closeExportModal();
+            },
+
             // --- ACCOUNT CRUD ---
             createAccount: () => {
                 const name = document.getElementById('new-account-name').value;
@@ -391,31 +730,6 @@
                 });
             },
 
-            // --- CHECK SETTLED STATUS (NEW HELPER) ---
-            isAccountSettled: (acc) => {
-                if (!acc.expenses || acc.expenses.length === 0) return false;
-                if (!acc.participants || acc.participants.length === 0) return false;
-
-                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-                if (total === 0) return true; // Si se borraron los gastos y queda 0, técnicamente está saldada
-                
-                const share = total / acc.participants.length;
-
-                const balances = {};
-                acc.participants.forEach(p => balances[p.name] = -share);
-                acc.expenses.forEach(e => balances[e.payer] = (balances[e.payer] || 0) + Number(e.amount));
-
-                if (acc.payments) {
-                    acc.payments.forEach(p => {
-                        if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
-                        if (balances[p.to] !== undefined) balances[p.to] -= Number(p.amount);
-                    });
-                }
-
-                // Si todos los balances están muy cerca de 0
-                return Object.values(balances).every(b => Math.abs(b) < 1.0);
-            },
-
             // --- RENDER HOME ---
             renderHome: () => {
                 const list = document.getElementById('accounts-list');
@@ -450,7 +764,6 @@
                         </div>
                     `;
                     el.onclick = (e) => {
-                        // Evita abrir la cuenta si se dio click en el boton de borrar
                         if(!e.target.closest('button')) {
                             app.openAccount(acc.id);
                         }
@@ -584,12 +897,11 @@
                 });
             },
 
-            // --- PARTICIPANT DELETION (NEW) ---
+            // --- PARTICIPANT DELETION ---
             confirmDeleteParticipant: (id, name) => {
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
                 if (!acc) return;
 
-                // Validación: ¿Está en uso?
                 const hasExpenses = acc.expenses && acc.expenses.some(e => e.payer === name);
                 const hasPayments = acc.payments && acc.payments.some(p => p.from === name || p.to === name);
 
@@ -609,42 +921,13 @@
             // --- CALCULATE BALANCES ---
             calculateBalances: () => {
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
-                if (!acc || !acc.participants.length || !acc.expenses.length) return utils.showToast("Faltan datos");
-
-                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-                const share = total / acc.participants.length;
-
-                const balances = {};
-                acc.participants.forEach(p => balances[p.name] = -share);
-                acc.expenses.forEach(e => balances[e.payer] += Number(e.amount));
-
-                if (acc.payments) {
-                    acc.payments.forEach(p => {
-                        if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
-                        if (balances[p.to] !== undefined) balances[p.to] -= Number(p.amount);
-                    });
-                }
-
-                let debtors = [];
-                let creditors = [];
-                for (const [name, amount] of Object.entries(balances)) {
-                    if (amount < -0.01) debtors.push({ name, amount: Math.abs(amount) });
-                    else if (amount > 0.01) creditors.push({ name, amount });
-                }
-                debtors.sort((a, b) => b.amount - a.amount);
-                creditors.sort((a, b) => b.amount - a.amount);
-
-                const transactions = [];
-                let i = 0, j = 0;
-                while (i < debtors.length && j < creditors.length) {
-                    let amount = Math.min(debtors[i].amount, creditors[j].amount);
-                    if (amount > 0.01) {
-                        transactions.push({ from: debtors[i].name, to: creditors[j].name, amount });
-                    }
-                    debtors[i].amount -= amount;
-                    creditors[j].amount -= amount;
-                    if (debtors[i].amount < 0.01) i++;
-                    if (creditors[j].amount < 0.01) j++;
+                if (!acc) return;
+                
+                const { transactions, share } = app.getDebts(acc);
+                
+                if (share === 0 && transactions.length === 0) {
+                     utils.showToast("No hay gastos para calcular");
+                     return;
                 }
 
                 app.showBalancesModal(transactions, share);
@@ -750,7 +1033,6 @@
                 const amount = document.getElementById('exp-amount').value;
                 const payer = document.getElementById('exp-payer').value;
                 
-                // VALIDACIÓN MEJORADA
                 const numAmount = Number(amount);
                 
                 if (!desc.trim()) return utils.showToast('Falta descripción');
