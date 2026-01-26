@@ -48,7 +48,10 @@
     </script>
 
     <style>
+        /* Fix definitivo para altura en móviles */
         body {
+            position: fixed;
+            inset: 0;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
         }
@@ -64,11 +67,11 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-dark dark:text-gray-100 transition-colors duration-200 h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-50 text-gray-900 dark:bg-dark dark:text-gray-100 transition-colors duration-200 flex flex-col overflow-hidden">
 
     <!-- VIEW: HOME (Lista de Cuentas) -->
-    <div id="view-home" class="view flex-col h-full flex">
-        <header class="bg-white dark:bg-cardDark pt-safe-top px-6 pb-4 shadow-sm z-10 sticky top-0">
+    <div id="view-home" class="view flex-col h-full flex w-full">
+        <header class="bg-white dark:bg-cardDark pt-safe-top px-6 pb-4 shadow-sm z-10 shrink-0">
             <div class="flex justify-between items-center mb-4 pt-4">
                 <div>
                     <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Cuentas Claras</h1>
@@ -86,11 +89,11 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-4 space-y-4" id="accounts-list">
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" id="accounts-list">
             <!-- Se llena con JS -->
         </main>
 
-        <div class="p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-dark dark:via-dark pointer-events-none sticky bottom-0 flex justify-end">
+        <div class="p-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-dark dark:via-dark pointer-events-none absolute bottom-0 right-0 z-20 flex justify-end">
             <button onclick="app.showAddAccountModal()" class="pointer-events-auto bg-primary text-white w-14 h-14 rounded-full shadow-xl shadow-indigo-500/40 flex items-center justify-center ios-btn transition transform hover:scale-105">
                 <i data-lucide="plus" class="w-8 h-8"></i>
             </button>
@@ -98,8 +101,8 @@
     </div>
 
     <!-- VIEW: ACCOUNT DETAIL -->
-    <div id="view-account" class="view hidden flex-col h-full flex bg-white dark:bg-dark">
-        <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center justify-between z-10 sticky top-0">
+    <div id="view-account" class="view hidden flex-col h-full flex w-full bg-white dark:bg-dark">
+        <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center justify-between z-10 shrink-0">
             <div class="flex items-center gap-3">
                 <button onclick="app.navigate('home')" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                     <i data-lucide="arrow-left" class="w-6 h-6"></i>
@@ -121,12 +124,21 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-4 space-y-6">
+        <!-- Main con min-h-0 para permitir scroll flex -->
+        <main class="flex-1 overflow-y-auto p-4 space-y-6 min-h-0">
             <!-- Resumen Total -->
             <div class="bg-primary text-white rounded-2xl p-6 shadow-lg shadow-indigo-500/20 relative overflow-hidden mb-2">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                <p class="text-indigo-100 text-sm font-medium mb-1">Total Gastado</p>
-                <h3 id="acc-total" class="text-4xl font-bold tracking-tight">$0</h3>
+                
+                <!-- Total Grupal (Principal) -->
+                <p class="text-indigo-100 text-sm font-medium mb-1">Gasto Grupal</p>
+                <h3 id="acc-total-group" class="text-4xl font-bold tracking-tight">$0</h3>
+                
+                <!-- Total General (Secundario) -->
+                <div class="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-indigo-100">
+                    <span>Total General (con personales):</span>
+                    <span id="acc-total-all" class="font-bold text-white text-sm">$0</span>
+                </div>
             </div>
 
             <!-- BOTÓN NUEVO GASTO -->
@@ -143,7 +155,7 @@
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Agregar
                     </button>
                 </div>
-                <!-- Añadido pt-2 para dar espacio al botón de borrar -->
+                <!-- pt-2 para dar espacio al botón de borrar -->
                 <div id="acc-participants" class="flex gap-2 overflow-x-auto py-2 hide-scrollbar">
                     <!-- Se llena con JS -->
                 </div>
@@ -151,7 +163,7 @@
             </div>
 
             <!-- Sección Gastos y Pagos -->
-            <div class="pb-28">
+            <div class="pb-6">
                  <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-lg dark:text-gray-100">Historial</h3>
                 </div>
@@ -161,8 +173,8 @@
             </div>
         </main>
 
-        <!-- Botón flotante Calcular -->
-        <div class="p-4 bg-white dark:bg-cardDark border-t border-gray-100 dark:border-gray-800 absolute bottom-0 w-full z-20">
+        <!-- Botón Calcular (Parte del flujo flex) -->
+        <div class="p-4 bg-white dark:bg-cardDark border-t border-gray-100 dark:border-gray-800 w-full shrink-0 z-20">
             <button onclick="app.calculateBalances()" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition ios-btn">
                 <i data-lucide="calculator" class="w-5 h-5 text-primary"></i>
                 Calcular División
@@ -171,15 +183,15 @@
     </div>
 
     <!-- VIEW: CATEGORIES -->
-    <div id="view-categories" class="view hidden flex-col h-full flex bg-white dark:bg-dark">
-        <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center gap-3 z-10">
+    <div id="view-categories" class="view hidden flex-col h-full flex w-full bg-white dark:bg-dark">
+        <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center gap-3 z-10 shrink-0">
             <button onclick="app.navigate('home')" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
             </button>
             <h2 class="text-xl font-bold">Categorías</h2>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-4">
+        <main class="flex-1 overflow-y-auto p-4 min-h-0">
             <div class="bg-gray-50 dark:bg-cardDark/50 p-4 rounded-xl mb-6 border border-dashed border-gray-300 dark:border-gray-700">
                 <div class="flex gap-2">
                     <input type="text" id="cat-emoji" placeholder="Icono (📦)" class="w-16 bg-white dark:bg-gray-800 rounded-xl px-3 text-center text-xl border-none focus:ring-2 focus:ring-primary outline-none" maxlength="2">
@@ -444,31 +456,26 @@
             // --- HELPERS DE CALCULO ---
             getDebts: (acc) => {
                 if (!acc || !acc.participants.length || !acc.expenses.length) {
-                    return { transactions: [], share: 0, total: 0 };
+                    return { transactions: [], share: 0, total: 0, totalGroup: 0 };
                 }
 
-                // 1. Inicializar Balances en 0
                 const balances = {};
                 acc.participants.forEach(p => balances[p.name] = 0);
 
                 let total = 0;
                 let totalGroupExpenses = 0;
 
-                // 2. Procesar Gastos
                 acc.expenses.forEach(e => {
                     const amount = Number(e.amount);
                     total += amount;
                     
-                    // El que paga siempre suma positivo (le deben)
                     balances[e.payer] = (balances[e.payer] || 0) + amount;
 
                     if (e.type === 'individual') {
-                        // Gasto Individual: Se resta TODO al beneficiario
                         if(balances[e.beneficiary] !== undefined) {
                             balances[e.beneficiary] -= amount;
                         }
                     } else {
-                        // Gasto Grupal: Se divide entre todos
                         totalGroupExpenses += amount;
                         const split = amount / acc.participants.length;
                         acc.participants.forEach(p => {
@@ -477,7 +484,6 @@
                     }
                 });
 
-                // 3. Procesar Pagos ya realizados (Transferencias)
                 if (acc.payments) {
                     acc.payments.forEach(p => {
                         if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
@@ -485,7 +491,6 @@
                     });
                 }
 
-                // 4. Calcular Deudas
                 let debtors = [];
                 let creditors = [];
                 for (const [name, amount] of Object.entries(balances)) {
@@ -508,10 +513,10 @@
                     if (creditors[j].amount < 0.01) j++;
                 }
                 
-                // Share solo muestra la cuota grupal promedio
                 const share = acc.participants.length > 0 ? totalGroupExpenses / acc.participants.length : 0;
                 
-                return { transactions, share, total };
+                // Ahora devolvemos también el totalGroupExpenses
+                return { transactions, share, total, totalGroup: totalGroupExpenses };
             },
 
             isAccountSettled: (acc) => {
@@ -560,11 +565,14 @@
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
                 if (!acc) return;
                 
-                const { transactions, total } = app.getDebts(acc);
+                const { transactions, total, totalGroup } = app.getDebts(acc);
 
                 let text = `📋 *${acc.name}*\n`;
                 if(acc.eventDate) text += `📅 Evento: ${utils.formatDate(acc.eventDate)}\n`;
-                text += `💰 Total: ${utils.formatCurrency(total)}\n\n`;
+                
+                // Desglose de totales en texto
+                text += `💰 Gasto Grupal: ${utils.formatCurrency(totalGroup)}\n`;
+                text += `💵 Total General (con personales): ${utils.formatCurrency(total)}\n\n`;
                 
                 text += `👥 *Participantes:*\n`;
                 acc.participants.forEach(p => text += `- ${p.name}\n`);
@@ -607,7 +615,7 @@
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
                 if (!acc) return;
                 
-                const { transactions, total } = app.getDebts(acc);
+                const { transactions, total, totalGroup } = app.getDebts(acc);
 
                 utils.showToast("Generando imagen...");
                 const el = document.createElement('div');
@@ -628,9 +636,16 @@
                     html += `<p style="color: #4F46E5; font-weight:bold; margin-bottom: 20px;">📅 Fecha del evento: ${utils.formatDate(acc.eventDate)}</p>`;
                 }
                 
+                // Desglose de totales en imagen
                 html += `<div style="background: #e0e7ff; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-                    <p style="font-size: 14px; color: #4338ca; font-weight: bold; margin: 0;">TOTAL GASTADO</p>
-                    <p style="font-size: 36px; font-weight: bold; color: #312e81; margin: 0;">${utils.formatCurrency(total)}</p>
+                    <div style="margin-bottom: 10px;">
+                        <p style="font-size: 14px; color: #4338ca; font-weight: bold; margin: 0;">GASTO GRUPAL</p>
+                        <p style="font-size: 36px; font-weight: bold; color: #312e81; margin: 0;">${utils.formatCurrency(totalGroup)}</p>
+                    </div>
+                    <div style="border-top: 1px solid #c7d2fe; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; color: #4338ca;">Total General (con personales):</span>
+                        <span style="font-size: 18px; font-weight: bold; color: #312e81;">${utils.formatCurrency(total)}</span>
+                    </div>
                 </div>`;
                 
                 html += `<div style="margin-bottom: 24px;"><p style="font-weight:bold; margin-bottom:5px;">Participantes:</p><p style="color:#4b5563;">${acc.participants.map(p => p.name).join(', ')}</p></div>`;
@@ -679,7 +694,7 @@
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
                 if (!acc) return;
                 
-                const { transactions, total } = app.getDebts(acc);
+                const { transactions, total, totalGroup } = app.getDebts(acc);
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
@@ -698,16 +713,31 @@
                 doc.text(subTitle, 20, y);
                 y += 15;
                 
+                // Desglose de totales en PDF
                 doc.setFillColor(240, 240, 240);
-                doc.rect(20, y, 170, 25, 'F');
+                doc.rect(20, y, 170, 35, 'F');
+                
                 doc.setFontSize(12);
                 doc.setTextColor(60);
-                doc.text("Total Gastado", 30, y + 10);
+                doc.text("Gasto Grupal", 30, y + 10);
+                
                 doc.setFontSize(18);
                 doc.setTextColor(0);
                 doc.setFont("helvetica", "bold");
-                doc.text(utils.formatCurrency(total), 30, y + 20);
-                y += 35;
+                doc.text(utils.formatCurrency(totalGroup), 30, y + 20);
+                
+                doc.setDrawColor(200);
+                doc.line(30, y+25, 180, y+25);
+                
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(80);
+                doc.text("Total General (con personales):", 30, y + 31);
+                
+                doc.setFont("helvetica", "bold");
+                doc.text(utils.formatCurrency(total), 140, y + 31);
+
+                y += 45;
 
                 doc.setFontSize(12);
                 doc.setTextColor(0);
@@ -901,8 +931,20 @@
                 }
                 document.getElementById('acc-meta').innerText = metaText;
                 
-                const total = (acc.expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
-                document.getElementById('acc-total').innerText = utils.formatCurrency(total);
+                // CÁLCULO DE TOTALES DIFERENCIADOS
+                let totalGroup = 0;
+                let totalAll = 0;
+
+                (acc.expenses || []).forEach(e => {
+                    const amt = Number(e.amount);
+                    totalAll += amt;
+                    if (e.type !== 'individual') {
+                        totalGroup += amt;
+                    }
+                });
+
+                document.getElementById('acc-total-group').innerText = utils.formatCurrency(totalGroup);
+                document.getElementById('acc-total-all').innerText = utils.formatCurrency(totalAll);
 
                 // Participants
                 const partList = document.getElementById('acc-participants');
