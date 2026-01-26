@@ -566,24 +566,36 @@
                 if (!acc) return;
                 
                 const { transactions, total, totalGroup } = app.getDebts(acc);
+                const groupExpenses = acc.expenses.filter(e => e.type !== 'individual');
+                const personalExpenses = acc.expenses.filter(e => e.type === 'individual');
 
                 let text = `📋 *${acc.name}*\n`;
                 if(acc.eventDate) text += `📅 Evento: ${utils.formatDate(acc.eventDate)}\n`;
                 
-                // Desglose de totales en texto
                 text += `💰 Gasto Grupal: ${utils.formatCurrency(totalGroup)}\n`;
                 text += `💵 Total General (con personales): ${utils.formatCurrency(total)}\n\n`;
                 
                 text += `👥 *Participantes:*\n`;
                 acc.participants.forEach(p => text += `- ${p.name}\n`);
                 
-                text += `\n🧾 *Gastos:*\n`;
-                acc.expenses.forEach(e => {
-                    const dateStr = e.userDate ? ` [${utils.formatDate(e.userDate)}]` : '';
-                    let details = `(${e.payer})`;
-                    if(e.type === 'individual') details = `(${e.payer} ➡ ${e.beneficiary})`;
-                    text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} ${details}${dateStr}\n`
-                });
+                // GASTOS GRUPALES
+                if (groupExpenses.length > 0) {
+                    text += `\n🧾 *Gastos Grupales:*\n`;
+                    groupExpenses.forEach(e => {
+                        const dateStr = e.userDate ? ` [${utils.formatDate(e.userDate)}]` : '';
+                        text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} (Pagó ${e.payer})${dateStr}\n`;
+                    });
+                }
+
+                // GASTOS PERSONALES (SECCIÓN NUEVA)
+                if (personalExpenses.length > 0) {
+                    text += `\n👤 *Gastos Personales:*\n`;
+                    personalExpenses.forEach(e => {
+                        const dateStr = e.userDate ? ` [${utils.formatDate(e.userDate)}]` : '';
+                        // Formato: Pagó A -> para B
+                        text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} (Pagó ${e.payer} -> para ${e.beneficiary})${dateStr}\n`;
+                    });
+                }
                 
                 if (acc.payments && acc.payments.length > 0) {
                     text += `\n💸 *Pagos ya realizados:*\n`;
@@ -616,6 +628,8 @@
                 if (!acc) return;
                 
                 const { transactions, total, totalGroup } = app.getDebts(acc);
+                const groupExpenses = acc.expenses.filter(e => e.type !== 'individual');
+                const personalExpenses = acc.expenses.filter(e => e.type === 'individual');
 
                 utils.showToast("Generando imagen...");
                 const el = document.createElement('div');
@@ -636,7 +650,6 @@
                     html += `<p style="color: #4F46E5; font-weight:bold; margin-bottom: 20px;">📅 Fecha del evento: ${utils.formatDate(acc.eventDate)}</p>`;
                 }
                 
-                // Desglose de totales en imagen
                 html += `<div style="background: #e0e7ff; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
                     <div style="margin-bottom: 10px;">
                         <p style="font-size: 14px; color: #4338ca; font-weight: bold; margin: 0;">GASTO GRUPAL</p>
@@ -650,17 +663,32 @@
                 
                 html += `<div style="margin-bottom: 24px;"><p style="font-weight:bold; margin-bottom:5px;">Participantes:</p><p style="color:#4b5563;">${acc.participants.map(p => p.name).join(', ')}</p></div>`;
 
-                html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px;">Gastos</h3>`;
-                acc.expenses.forEach(e => {
-                    const dateStr = e.userDate ? `<span style="font-size:12px; color:#9ca3af; margin-left:8px;">${utils.formatDate(e.userDate)}</span>` : '';
-                    let payerText = `<span style="font-size: 14px; color: #6b7280;">(${e.payer})</span>`;
-                    if(e.type === 'individual') payerText = `<span style="font-size: 14px; color: #d97706;">(Personal: ${e.payer} ➡ ${e.beneficiary})</span>`;
+                // SECCIÓN GASTOS GRUPALES
+                if (groupExpenses.length > 0) {
+                    html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px;">Gastos Grupales</h3>`;
+                    groupExpenses.forEach(e => {
+                        const dateStr = e.userDate ? `<span style="font-size:12px; color:#9ca3af; margin-left:8px;">${utils.formatDate(e.userDate)}</span>` : '';
+                        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
+                            <div><span style="font-weight: bold;">${e.desc}</span> <span style="font-size: 14px; color: #6b7280;">(Pagó ${e.payer})</span> ${dateStr}</div>
+                            <div style="font-weight: bold;">${utils.formatCurrency(e.amount)}</div>
+                        </div>`;
+                    });
+                }
 
-                    html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
-                        <div><span style="font-weight: bold;">${e.desc}</span> ${payerText} ${dateStr}</div>
-                        <div style="font-weight: bold;">${utils.formatCurrency(e.amount)}</div>
-                    </div>`;
-                });
+                // SECCIÓN GASTOS PERSONALES
+                if (personalExpenses.length > 0) {
+                    html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px; margin-top: 24px; color: #d97706;">Gastos Personales</h3>`;
+                    personalExpenses.forEach(e => {
+                        const dateStr = e.userDate ? `<span style="font-size:12px; color:#9ca3af; margin-left:8px;">${utils.formatDate(e.userDate)}</span>` : '';
+                        // Formato: Pagó A -> para B
+                        const details = `<span style="font-size: 14px; color: #d97706;">(Pagó ${e.payer} &rarr; para ${e.beneficiary})</span>`;
+                        
+                        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
+                            <div><span style="font-weight: bold;">${e.desc}</span> ${details} ${dateStr}</div>
+                            <div style="font-weight: bold; color: #d97706;">${utils.formatCurrency(e.amount)}</div>
+                        </div>`;
+                    });
+                }
 
                 html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px; margin-top: 30px; color: #dc2626;">División (A Pagar)</h3>`;
                 if (transactions.length === 0) {
@@ -695,6 +723,9 @@
                 if (!acc) return;
                 
                 const { transactions, total, totalGroup } = app.getDebts(acc);
+                const groupExpenses = acc.expenses.filter(e => e.type !== 'individual');
+                const personalExpenses = acc.expenses.filter(e => e.type === 'individual');
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
@@ -713,7 +744,7 @@
                 doc.text(subTitle, 20, y);
                 y += 15;
                 
-                // Desglose de totales en PDF
+                // Desglose de totales
                 doc.setFillColor(240, 240, 240);
                 doc.rect(20, y, 170, 35, 'F');
                 
@@ -750,39 +781,64 @@
                 doc.text(splitText, 55, y);
                 y += (splitText.length * 7) + 10;
 
-                doc.setFontSize(14);
-                doc.setTextColor(0);
-                doc.setFont("helvetica", "bold");
-                doc.text("Detalle de Gastos", 20, y);
-                doc.setDrawColor(200);
-                doc.line(20, y+2, 190, y+2);
-                y += 15;
-                
-                doc.setFontSize(11);
-                doc.setFont("helvetica", "normal");
-                
-                acc.expenses.forEach(e => {
-                    if (y > 270) { doc.addPage(); y = 20; }
-                    let itemText = `${e.desc}`;
-                    if(e.type === 'individual') {
-                        itemText += ` (Personal: ${e.payer} -> ${e.beneficiary})`;
-                        doc.setTextColor(200, 100, 0); // Orange for personal
-                    } else {
-                        itemText += ` (Pagó ${e.payer})`;
-                        doc.setTextColor(0);
-                    }
+                // --- GASTOS GRUPALES PDF ---
+                if (groupExpenses.length > 0) {
+                    doc.setFontSize(14);
+                    doc.setTextColor(0);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Gastos Grupales", 20, y);
+                    doc.setDrawColor(200);
+                    doc.line(20, y+2, 190, y+2);
+                    y += 15;
                     
-                    if(e.userDate) itemText += ` [${utils.formatDate(e.userDate)}]`;
+                    doc.setFontSize(11);
+                    doc.setFont("helvetica", "normal");
                     
-                    doc.text(itemText, 20, y);
-                    doc.setTextColor(0); // Reset color
-                    const amountStr = utils.formatCurrency(e.amount);
-                    const width = doc.getTextWidth(amountStr);
-                    doc.text(amountStr, 190 - width, y);
-                    y += 10;
-                });
+                    groupExpenses.forEach(e => {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        let itemText = `${e.desc} (Pagó ${e.payer})`;
+                        if(e.userDate) itemText += ` [${utils.formatDate(e.userDate)}]`;
+                        
+                        doc.text(itemText, 20, y);
+                        const amountStr = utils.formatCurrency(e.amount);
+                        const width = doc.getTextWidth(amountStr);
+                        doc.text(amountStr, 190 - width, y);
+                        y += 10;
+                    });
+                    y += 5;
+                }
 
-                y += 10;
+                // --- GASTOS PERSONALES PDF ---
+                if (personalExpenses.length > 0) {
+                    if (y > 250) { doc.addPage(); y = 20; }
+                    doc.setFontSize(14);
+                    doc.setTextColor(200, 100, 0); // Orange
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Gastos Personales", 20, y);
+                    doc.setDrawColor(200, 100, 0);
+                    doc.line(20, y+2, 190, y+2);
+                    y += 15;
+                    
+                    doc.setFontSize(11);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(0); // Reset color for item names
+                    
+                    personalExpenses.forEach(e => {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        // Formato: Pagó A -> para B
+                        let itemText = `${e.desc} (Pagó ${e.payer} -> para ${e.beneficiary})`;
+                        if(e.userDate) itemText += ` [${utils.formatDate(e.userDate)}]`;
+                        
+                        doc.text(itemText, 20, y);
+                        const amountStr = utils.formatCurrency(e.amount);
+                        const width = doc.getTextWidth(amountStr);
+                        doc.text(amountStr, 190 - width, y);
+                        y += 10;
+                    });
+                    y += 5;
+                }
+
+                y += 5;
                 if (y > 250) { doc.addPage(); y = 20; }
                 
                 doc.setFontSize(14);
@@ -1330,7 +1386,7 @@
                     utils.showToast("Escribe un nombre");
                 }
             }
-        };
+        }; 
 
         document.addEventListener('DOMContentLoaded', app.init);
     </script>
