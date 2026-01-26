@@ -32,6 +32,15 @@
                         dark: '#111827',
                         cardDark: '#1F2937',
                         danger: '#EF4444',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.2s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-5px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
@@ -89,7 +98,7 @@
     </div>
 
     <!-- VIEW: ACCOUNT DETAIL -->
-    <div id="view-account" class="view hidden flex-col h-full bg-white dark:bg-dark">
+    <div id="view-account" class="view hidden flex-col h-full flex bg-white dark:bg-dark">
         <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center justify-between z-10 sticky top-0">
             <div class="flex items-center gap-3">
                 <button onclick="app.navigate('home')" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -134,14 +143,15 @@
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Agregar
                     </button>
                 </div>
-                <div id="acc-participants" class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                <!-- Añadido pt-2 para dar espacio al botón de borrar -->
+                <div id="acc-participants" class="flex gap-2 overflow-x-auto py-2 hide-scrollbar">
                     <!-- Se llena con JS -->
                 </div>
-                <p class="text-[10px] text-gray-400 mt-2 italic px-1">Toca un participante para eliminarlo</p>
+                <p class="text-[10px] text-gray-400 mt-1 italic px-1">Toca un participante para eliminarlo</p>
             </div>
 
             <!-- Sección Gastos y Pagos -->
-            <div class="pb-20">
+            <div class="pb-28">
                  <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-lg dark:text-gray-100">Historial</h3>
                 </div>
@@ -161,7 +171,7 @@
     </div>
 
     <!-- VIEW: CATEGORIES -->
-    <div id="view-categories" class="view hidden flex-col h-full bg-white dark:bg-dark">
+    <div id="view-categories" class="view hidden flex-col h-full flex bg-white dark:bg-dark">
         <header class="bg-white dark:bg-cardDark px-4 py-4 shadow-sm flex items-center gap-3 z-10">
             <button onclick="app.navigate('home')" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
@@ -271,6 +281,21 @@
                     <label class="text-xs text-gray-500 font-medium ml-1">Fecha del Gasto (Opcional)</label>
                     <input type="date" id="exp-date" class="w-full mt-1 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
                 </div>
+                
+                <!-- TIPO DE GASTO -->
+                <div class="pt-2">
+                    <div class="flex items-center gap-2 mb-2 cursor-pointer bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700" onclick="document.getElementById('exp-is-personal').click()">
+                        <input type="checkbox" id="exp-is-personal" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 pointer-events-none" onchange="app.toggleExpenseType(event)">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer flex-1">¿Es un gasto personal?</label>
+                    </div>
+                    
+                    <div id="exp-beneficiary-wrapper" class="hidden animate-fade-in pl-2 border-l-2 border-primary ml-1">
+                        <label class="text-xs text-gray-500 font-medium ml-1">¿Para quién es (Beneficiario)?</label>
+                        <select id="exp-beneficiary" class="w-full mt-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none text-primary font-bold"></select>
+                        <p class="text-[10px] text-gray-400 mt-1 ml-1">Este monto se cobrará 100% a esta persona.</p>
+                    </div>
+                </div>
+
                 <button onclick="app.createExpense()" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-lg mt-2">Guardar Gasto</button>
                 <button onclick="app.closeAddExpenseModal()" class="w-full text-gray-500 py-3 font-medium">Cancelar</button>
             </div>
@@ -293,8 +318,9 @@
             </div>
 
             <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 mb-6 shrink-0 text-center border border-indigo-100 dark:border-indigo-800/50">
-                <p class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Cuota por persona</p>
+                <p class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Cuota Grupal (Promedio)</p>
                 <h3 id="bal-share" class="text-3xl font-bold text-gray-900 dark:text-white">$0</h3>
+                <p class="text-[10px] text-gray-400 mt-1 italic">Más gastos particulares individuales</p>
             </div>
 
             <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-3 shrink-0">Deudas Pendientes</h3>
@@ -358,12 +384,10 @@
             },
             formatDate: (dateStr) => {
                 if (!dateStr) return '';
-                // Handle YYYY-MM-DD manually to avoid UTC conversion issues
                 if (dateStr.includes('-') && dateStr.length === 10) {
                     const parts = dateStr.split('-');
                     return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
-                // Handle ISO string
                 return new Date(dateStr).toLocaleDateString();
             },
             generateId: () => Date.now().toString(36) + Math.random().toString(36).substr(2)
@@ -423,13 +447,37 @@
                     return { transactions: [], share: 0, total: 0 };
                 }
 
-                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-                const share = total / acc.participants.length;
-
+                // 1. Inicializar Balances en 0
                 const balances = {};
-                acc.participants.forEach(p => balances[p.name] = -share);
-                acc.expenses.forEach(e => balances[e.payer] = (balances[e.payer] || 0) + Number(e.amount));
+                acc.participants.forEach(p => balances[p.name] = 0);
 
+                let total = 0;
+                let totalGroupExpenses = 0;
+
+                // 2. Procesar Gastos
+                acc.expenses.forEach(e => {
+                    const amount = Number(e.amount);
+                    total += amount;
+                    
+                    // El que paga siempre suma positivo (le deben)
+                    balances[e.payer] = (balances[e.payer] || 0) + amount;
+
+                    if (e.type === 'individual') {
+                        // Gasto Individual: Se resta TODO al beneficiario
+                        if(balances[e.beneficiary] !== undefined) {
+                            balances[e.beneficiary] -= amount;
+                        }
+                    } else {
+                        // Gasto Grupal: Se divide entre todos
+                        totalGroupExpenses += amount;
+                        const split = amount / acc.participants.length;
+                        acc.participants.forEach(p => {
+                            balances[p.name] -= split;
+                        });
+                    }
+                });
+
+                // 3. Procesar Pagos ya realizados (Transferencias)
                 if (acc.payments) {
                     acc.payments.forEach(p => {
                         if (balances[p.from] !== undefined) balances[p.from] += Number(p.amount);
@@ -437,6 +485,7 @@
                     });
                 }
 
+                // 4. Calcular Deudas
                 let debtors = [];
                 let creditors = [];
                 for (const [name, amount] of Object.entries(balances)) {
@@ -458,6 +507,10 @@
                     if (debtors[i].amount < 0.01) i++;
                     if (creditors[j].amount < 0.01) j++;
                 }
+                
+                // Share solo muestra la cuota grupal promedio
+                const share = acc.participants.length > 0 ? totalGroupExpenses / acc.participants.length : 0;
+                
                 return { transactions, share, total };
             },
 
@@ -465,14 +518,20 @@
                 if (!acc.expenses || acc.expenses.length === 0) return false;
                 if (!acc.participants || acc.participants.length === 0) return false;
 
-                const total = acc.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-                if (total === 0) return true;
-                
-                const share = total / acc.participants.length;
-
                 const balances = {};
-                acc.participants.forEach(p => balances[p.name] = -share);
-                acc.expenses.forEach(e => balances[e.payer] = (balances[e.payer] || 0) + Number(e.amount));
+                acc.participants.forEach(p => balances[p.name] = 0);
+
+                acc.expenses.forEach(e => {
+                    const amount = Number(e.amount);
+                    balances[e.payer] = (balances[e.payer] || 0) + amount;
+                    
+                    if (e.type === 'individual') {
+                        if(balances[e.beneficiary] !== undefined) balances[e.beneficiary] -= amount;
+                    } else {
+                        const split = amount / acc.participants.length;
+                        acc.participants.forEach(p => balances[p.name] -= split);
+                    }
+                });
 
                 if (acc.payments) {
                     acc.payments.forEach(p => {
@@ -512,8 +571,10 @@
                 
                 text += `\n🧾 *Gastos:*\n`;
                 acc.expenses.forEach(e => {
-                    const dateStr = e.userDate ? ` - 📅 ${utils.formatDate(e.userDate)}` : '';
-                    text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} (${e.payer})${dateStr}\n`
+                    const dateStr = e.userDate ? ` [${utils.formatDate(e.userDate)}]` : '';
+                    let details = `(${e.payer})`;
+                    if(e.type === 'individual') details = `(${e.payer} ➡ ${e.beneficiary})`;
+                    text += `- ${e.desc}: ${utils.formatCurrency(e.amount)} ${details}${dateStr}\n`
                 });
                 
                 if (acc.payments && acc.payments.length > 0) {
@@ -577,8 +638,11 @@
                 html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px;">Gastos</h3>`;
                 acc.expenses.forEach(e => {
                     const dateStr = e.userDate ? `<span style="font-size:12px; color:#9ca3af; margin-left:8px;">${utils.formatDate(e.userDate)}</span>` : '';
+                    let payerText = `<span style="font-size: 14px; color: #6b7280;">(${e.payer})</span>`;
+                    if(e.type === 'individual') payerText = `<span style="font-size: 14px; color: #d97706;">(Personal: ${e.payer} ➡ ${e.beneficiary})</span>`;
+
                     html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
-                        <div><span style="font-weight: bold;">${e.desc}</span> <span style="font-size: 14px; color: #6b7280;">(${e.payer})</span> ${dateStr}</div>
+                        <div><span style="font-weight: bold;">${e.desc}</span> ${payerText} ${dateStr}</div>
                         <div style="font-weight: bold;">${utils.formatCurrency(e.amount)}</div>
                     </div>`;
                 });
@@ -669,10 +733,19 @@
                 
                 acc.expenses.forEach(e => {
                     if (y > 270) { doc.addPage(); y = 20; }
-                    let itemText = `${e.desc} (Pagó ${e.payer})`;
+                    let itemText = `${e.desc}`;
+                    if(e.type === 'individual') {
+                        itemText += ` (Personal: ${e.payer} -> ${e.beneficiary})`;
+                        doc.setTextColor(200, 100, 0); // Orange for personal
+                    } else {
+                        itemText += ` (Pagó ${e.payer})`;
+                        doc.setTextColor(0);
+                    }
+                    
                     if(e.userDate) itemText += ` [${utils.formatDate(e.userDate)}]`;
                     
                     doc.text(itemText, 20, y);
+                    doc.setTextColor(0); // Reset color
                     const amountStr = utils.formatCurrency(e.amount);
                     const width = doc.getTextWidth(amountStr);
                     doc.text(amountStr, 190 - width, y);
@@ -882,15 +955,25 @@
                         if (item.type === 'expense') {
                             el.className = 'flex items-center justify-between p-3 bg-white dark:bg-cardDark rounded-xl border border-gray-100 dark:border-gray-800 group';
                             const dateBadge = item.userDate ? `<span class="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1.5 py-0.5 rounded ml-2">${utils.formatDate(item.userDate).slice(0,5)}</span>` : '';
+                            
+                            // Visualización si es personal
+                            let infoLine = `<p class="text-xs text-gray-500">Pagó: ${item.payer}</p>`;
+                            let icon = `<div class="bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg text-primary shrink-0"><i data-lucide="receipt" class="w-5 h-5"></i></div>`;
+                            
+                            if (item.type === 'individual') {
+                                icon = `<div class="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg text-amber-500 shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                                infoLine = `<p class="text-xs text-amber-600 dark:text-amber-500 font-medium">Personal: ${item.payer} <i data-lucide="arrow-right" class="w-3 h-3 inline"></i> ${item.beneficiary}</p>`;
+                            }
+
                             el.innerHTML = `
                                 <div class="flex items-center gap-3 overflow-hidden">
-                                    <div class="bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg text-primary shrink-0"><i data-lucide="receipt" class="w-5 h-5"></i></div>
+                                    ${icon}
                                     <div class="truncate">
                                         <div class="flex items-center">
                                             <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">${item.desc}</h4>
                                             ${dateBadge}
                                         </div>
-                                        <p class="text-xs text-gray-500">Pagó: ${item.payer}</p>
+                                        ${infoLine}
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
@@ -1062,8 +1145,20 @@
                 }
                 const modal = document.getElementById('modal-add-expense');
                 const panel = document.getElementById('modal-add-expense-panel');
+                
+                // Llenar Payer
                 const payerSelect = document.getElementById('exp-payer');
-                payerSelect.innerHTML = acc.participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                const options = acc.participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                payerSelect.innerHTML = options;
+
+                // Llenar Beneficiary (Nuevo)
+                const benSelect = document.getElementById('exp-beneficiary');
+                benSelect.innerHTML = options;
+
+                // Reset UI
+                document.getElementById('exp-is-personal').checked = false;
+                document.getElementById('exp-beneficiary-wrapper').classList.add('hidden');
+
                 modal.classList.remove('hidden');
                 setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
             },
@@ -1072,32 +1167,57 @@
                 const panel = document.getElementById('modal-add-expense-panel');
                 modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
                 setTimeout(() => modal.classList.add('hidden'), 300);
+                
+                // Limpiar form
                 document.getElementById('exp-desc').value = '';
                 document.getElementById('exp-amount').value = '';
-                document.getElementById('exp-date').value = ''; // Limpiar fecha
+                document.getElementById('exp-date').value = ''; 
             },
+            
+            toggleExpenseType: (e) => {
+                const isPersonal = document.getElementById('exp-is-personal').checked;
+                const wrapper = document.getElementById('exp-beneficiary-wrapper');
+                if(isPersonal) {
+                    wrapper.classList.remove('hidden');
+                } else {
+                    wrapper.classList.add('hidden');
+                }
+            },
+
             createExpense: () => {
                 const desc = document.getElementById('exp-desc').value;
                 const amount = document.getElementById('exp-amount').value;
                 const payer = document.getElementById('exp-payer').value;
-                const userDate = document.getElementById('exp-date').value; // Nueva fecha
+                const userDate = document.getElementById('exp-date').value;
                 
+                const isPersonal = document.getElementById('exp-is-personal').checked;
+                const beneficiary = document.getElementById('exp-beneficiary').value;
+
                 const numAmount = Number(amount);
                 
                 if (!desc.trim()) return utils.showToast('Falta descripción');
                 if (isNaN(numAmount) || numAmount <= 0) return utils.showToast('Monto inválido');
                 if (!payer) return utils.showToast('Selecciona quién pagó');
+                if (isPersonal && !beneficiary) return utils.showToast('Selecciona beneficiario');
 
                 const acc = store.accounts.find(a => a.id === store.currentAccountId);
                 if (!acc.expenses) acc.expenses = [];
-                acc.expenses.push({ 
+                
+                const newExpense = { 
                     id: utils.generateId(), 
                     desc, 
                     amount: numAmount, 
                     payer, 
                     date: new Date().toISOString(),
-                    userDate: userDate || null // Guardar fecha
-                });
+                    userDate: userDate || null,
+                    type: isPersonal ? 'individual' : 'group'
+                };
+
+                if (isPersonal) {
+                    newExpense.beneficiary = beneficiary;
+                }
+
+                acc.expenses.push(newExpense);
                 utils.save();
                 app.renderAccount();
                 app.closeAddExpenseModal();
