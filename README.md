@@ -22,7 +22,11 @@ Cuentas Claras es una aplicación web progresiva (PWA) diseñada para simplifica
 
 * Carpetas y selección múltiple: mantén presionada una cuenta para entrar en modo selección, elige varias (o "Todas"), y bórralas de una o agrúpalas en una carpeta. Las carpetas se renombran, se abren para ver su contenido, y aceptan cuentas arrastrándolas encima o con "Mover a…". Borrar una carpeta nunca borra sus cuentas: vuelven a la lista principal.
 
-* Configuración (engranaje en la pantalla principal): color picker para el primario, el secundario, el fondo y las tarjetas, por separado en tema claro y oscuro, con "Restaurar" para volver a los de fábrica.
+* Temas: 5 de fábrica (Claro, Oscuro, Alto Contraste, Azul y Rojo) más los que crees. Cada tema define 7 colores (primario, secundario, fondo, tarjetas, texto, texto apagado y bordes) y todos se pueden aplicar, editar, borrar y restaurar de fábrica desde Configuración.
+
+* Filtro por categoría: los chips de la pantalla principal filtran las cuentas. Se pueden marcar varias a la vez; "Todas" marca o desmarca todo. Las carpetas se filtran por contenido y muestran cuántas de sus cuentas pasan.
+
+* Compartir una cuenta o una carpeta: genera un QR que el otro escanea con la cámara normal de su teléfono (no hace falta escanear desde la app). También se puede mandar como enlace o como archivo JSON. Los datos viajan dentro del `#` del enlace, así que nunca llegan al servidor. Es una copia: si después alguno edita, las copias divergen.
 
 * Exportar e importar todo en JSON: el archivo lleva cuentas, carpetas, categorías y colores. Al importar, las cuentas del archivo entran agrupadas en una carpeta nueva y no se pisa nada de lo que ya había.
 

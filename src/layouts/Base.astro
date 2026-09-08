@@ -22,22 +22,35 @@ const base = import.meta.env.BASE_URL;
     <!-- Aplica el tema antes del primer pintado, si no la app parpadea en blanco. -->
     <script is:inline>
         try {
-            var t = localStorage.getItem('cc_theme') === 'light' ? 'light' : 'dark';
-            if (t === 'light') document.documentElement.classList.remove('dark');
-            var c = JSON.parse(localStorage.getItem('cc_colors') || 'null');
-            if (c && c[t]) {
-                for (var k in c[t]) {
-                    var m = /^#([0-9a-f]{6})$/i.exec(String(c[t][k]));
-                    if (!m) continue;
-                    var n = parseInt(m[1], 16);
-                    document.documentElement.style.setProperty(
-                        '--c-' + k, ((n >> 16) & 255) + ' ' + ((n >> 8) & 255) + ' ' + (n & 255));
+            var root = document.documentElement;
+            var themes = JSON.parse(localStorage.getItem('cc_themes') || 'null');
+            var id = localStorage.getItem('cc_theme_id') || localStorage.getItem('cc_theme') || 'dark';
+            var active = Array.isArray(themes) ? themes.filter(function (t) { return t && t.id === id; })[0] : null;
+            var colors = active && active.colors;
+            if (!colors && id === 'light') colors = { base: '#F9FAFB' };
+            var rgb = function (hex) {
+                var m = /^#([0-9a-f]{6})$/i.exec(String(hex));
+                if (!m) return null;
+                var n = parseInt(m[1], 16);
+                return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            };
+            if (colors) {
+                for (var k in colors) {
+                    var v = rgb(colors[k]);
+                    if (v) root.style.setProperty('--c-' + k, v.join(' '));
+                }
+                var b = rgb(colors.base);
+                if (b) {
+                    var lum = (0.2126 * b[0] + 0.7152 * b[1] + 0.0722 * b[2]) / 255;
+                    var dark = lum < 0.45;
+                    root.classList.toggle('dark', dark);
+                    root.style.colorScheme = dark ? 'dark' : 'light';
                 }
             }
         } catch (e) {}
     </script>
 </head>
-<body class="bg-base text-gray-900 dark:text-gray-100 transition-colors duration-200 flex flex-col overflow-hidden">
+<body class="bg-base text-content transition-colors duration-200 flex flex-col overflow-hidden">
     <slot />
 </body>
 </html>

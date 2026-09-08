@@ -16,8 +16,10 @@ import {
   Info,
   Moon,
   Pencil,
+  Link,
   Plus,
   PlusCircle,
+  QrCode,
   Receipt,
   RotateCcw,
   Settings,
@@ -34,7 +36,8 @@ const usedIcons = {
   AlertTriangle, ArrowLeft, ArrowRight, Calculator, Check, CheckCircle2,
   CornerUpLeft, Download, File: FileIcon, FileText, Folder, FolderPlus,
   Image: ImageIcon,
-  Info, Moon, Pencil, Plus, PlusCircle, Receipt, RotateCcw, Settings, Share2,
+  Info, Link, Moon, Pencil, Plus, PlusCircle, QrCode, Receipt, RotateCcw,
+  Settings, Share2,
   Sun, Trash2, Upload, User, X,
 };
 
@@ -49,48 +52,105 @@ const defaultCategories = [
     { id: 5, name: 'Ocio', emoji: '🎉' }
 ];
 
-const defaultColors = {
-    light: { primary: '#4F46E5', secondary: '#10B981', base: '#F9FAFB', surface: '#FFFFFF' },
-    dark:  { primary: '#4F46E5', secondary: '#10B981', base: '#111827', surface: '#1F2937' }
-};
+const THEME_KEYS = ['primary', 'secondary', 'base', 'surface', 'content', 'muted', 'line'];
 
-const colorLabels = {
+const themeLabels = {
     primary:   ['Primario', 'Botones, enlaces y acentos'],
-    secondary: ['Secundario', 'Verde de saldado y confirmaciones'],
+    secondary: ['Secundario', 'Saldado y confirmaciones'],
     base:      ['Fondo', 'Color de la pantalla'],
-    surface:   ['Tarjetas', 'Cabeceras, tarjetas y hojas']
+    surface:   ['Tarjetas', 'Cabeceras, tarjetas y hojas'],
+    content:   ['Texto', 'Títulos y texto principal'],
+    muted:     ['Texto apagado', 'Subtítulos y ayudas'],
+    line:      ['Bordes', 'Líneas y separadores']
 };
 
-// Mezclado contra los valores de fábrica: un guardado viejo o a medias no puede
-// dejar una variable CSS sin definir.
-const loadColors = () => {
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem('cc_colors')) || {}; } catch (e) { saved = {}; }
-    return {
-        light: { ...defaultColors.light, ...(saved.light || {}) },
-        dark:  { ...defaultColors.dark,  ...(saved.dark  || {}) }
-    };
+const factoryThemes = [
+    { id: 'light', name: 'Tema Claro', colors: {
+        primary: '#4F46E5', secondary: '#10B981', base: '#F9FAFB', surface: '#FFFFFF',
+        content: '#111827', muted: '#6B7280', line: '#E5E7EB' } },
+    { id: 'dark', name: 'Tema Oscuro', colors: {
+        primary: '#4F46E5', secondary: '#10B981', base: '#111827', surface: '#1F2937',
+        content: '#F3F4F6', muted: '#9CA3AF', line: '#374151' } },
+    { id: 'contrast', name: 'Alto Contraste', colors: {
+        primary: '#FFD400', secondary: '#00E676', base: '#000000', surface: '#0D0D0D',
+        content: '#FFFFFF', muted: '#D4D4D4', line: '#8A8A8A' } },
+    { id: 'blue', name: 'Tema Azul', colors: {
+        primary: '#3B82F6', secondary: '#22D3EE', base: '#0B1220', surface: '#132033',
+        content: '#E8EFFA', muted: '#94AEC9', line: '#27394F' } },
+    { id: 'red', name: 'Tema Rojo', colors: {
+        primary: '#E11D48', secondary: '#F59E0B', base: '#1A0B10', surface: '#2B131C',
+        content: '#FDE8EC', muted: '#C68C99', line: '#4C2432' } }
+];
+
+const cloneFactory = () => factoryThemes.map(t => ({ id: t.id, name: t.name, colors: { ...t.colors } }));
+
+// Mezclado contra fábrica: un tema guardado a medias no puede dejar una
+// variable CSS sin definir. Migra además el modelo viejo (cc_colors), que solo
+// tenía 4 colores por modo: se vuelcan sobre el tema claro/oscuro de fábrica y
+// los 3 colores nuevos salen de ahí.
+const loadThemes = () => {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('cc_themes')); } catch (e) { saved = null; }
+
+    if (Array.isArray(saved) && saved.length) {
+        const fallback = factoryThemes[1].colors;
+        return saved
+            .filter(t => t && t.id && typeof t.name === 'string')
+            .map(t => {
+                const factory = factoryThemes.find(f => f.id === t.id);
+                return { id: t.id, name: t.name, colors: { ...(factory ? factory.colors : fallback), ...(t.colors || {}) } };
+            });
+    }
+
+    const themes = cloneFactory();
+    let old = null;
+    try { old = JSON.parse(localStorage.getItem('cc_colors')); } catch (e) { old = null; }
+    if (old) {
+        ['light', 'dark'].forEach(mode => {
+            const palette = old[mode];
+            const target = themes.find(t => t.id === mode);
+            if (!palette || !target) return;
+            ['primary', 'secondary', 'base', 'surface'].forEach(k => {
+                if (/^#[0-9a-f]{6}$/i.test(String(palette[k] || ''))) target.colors[k] = palette[k];
+            });
+        });
+    }
+    return themes;
+};
+
+const loadThemeId = (themes) => {
+    const saved = localStorage.getItem('cc_theme_id') || localStorage.getItem('cc_theme');
+    return themes.some(t => t.id === saved) ? saved : (themes[1] || themes[0]).id;
 };
 
 const store = {
     accounts: JSON.parse(localStorage.getItem('cc_accounts')) || [],
     categories: JSON.parse(localStorage.getItem('cc_categories')) || defaultCategories,
     folders: JSON.parse(localStorage.getItem('cc_folders')) || [],
-    colors: loadColors(),
-    theme: localStorage.getItem('cc_theme') || 'dark', 
+    themes: loadThemes(),
     currentAccountId: null,
     currentFolderId: null,
     editingExpenseId: null,
     // null = fuera del modo selección; Set de ids de cuenta cuando está activo.
-    selection: null
+    selection: null,
+    // Borrador del editor de temas; null cuando el modal está cerrado.
+    themeDraft: null,
+    // null = todas las categorías. Un Set = solo esas. Un Set vacío = ninguna.
+    // No se persiste: un filtro guardado entre sesiones parece pérdida de datos.
+    categoryFilter: null,
+    // Índice de la categoría que se está editando; null al crear una nueva.
+    editingCategoryIndex: null
 };
+
+store.themeId = loadThemeId(store.themes);
 
 const utils = {
     save: () => {
         localStorage.setItem('cc_accounts', JSON.stringify(store.accounts));
         localStorage.setItem('cc_categories', JSON.stringify(store.categories));
         localStorage.setItem('cc_folders', JSON.stringify(store.folders));
-        localStorage.setItem('cc_colors', JSON.stringify(store.colors));
+        localStorage.setItem('cc_themes', JSON.stringify(store.themes));
+        localStorage.setItem('cc_theme_id', store.themeId);
     },
     showToast: (msg) => {
         const toast = document.getElementById('toast');
@@ -121,7 +181,33 @@ const utils = {
         if (!m) return null;
         const n = parseInt(m[1], 16);
         return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
-    }
+    },
+    // Luminancia relativa sRGB (WCAG). Decide si un tema es claro u oscuro y
+    // qué color de texto va encima de un acento.
+    luminance: (hex) => {
+        const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+        if (!m) return 0;
+        const n = parseInt(m[1], 16);
+        const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+            .map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+    },
+    isDarkColor: (hex) => utils.luminance(hex) < 0.4,
+    toBase64Url: (bytes) => {
+        let bin = '';
+        bytes.forEach(b => { bin += String.fromCharCode(b); });
+        return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    fromBase64Url: (text) => {
+        const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
+        const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
+        return Uint8Array.from(bin, c => c.charCodeAt(0));
+    },
+    // Todo texto que llega de un archivo o de un enlace pasa por acá. La app
+    // pinta nombres con innerHTML en muchos lados: sin esto, un enlace armado a
+    // mano podría inyectar HTML.
+    clean: (value, max = 120) => String(value == null ? '' : value).replace(/[<>]/g, '').trim().slice(0, max),
+    contrastOn: (hex) => (utils.luminance(hex) > 0.45 ? '17 24 39' : '255 255 255')
 };
 
 const app = {
@@ -138,8 +224,15 @@ const app = {
         document.addEventListener('pointerup', app.armGestureGuard, true);
         document.addEventListener('pointercancel', app.armGestureGuard, true);
         app.applyTheme();
+        // La migración de cc_colors vive solo en memoria hasta que algo guarda:
+        // se persiste acá para que no se rehaga en cada arranque.
+        if (!localStorage.getItem('cc_themes')) utils.save();
         app.renderHome();
         lucide.createIcons();
+        app.checkIncomingShare();
+        // Si la app ya estaba abierta, abrir un enlace compartido solo cambia el
+        // hash y no recarga el documento: sin esto el enlace no haría nada.
+        window.addEventListener('hashchange', () => app.checkIncomingShare());
     },
 
     _pendingGesture: false,
@@ -155,29 +248,77 @@ const app = {
         document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
         document.getElementById(`view-${viewId}`).classList.remove('hidden');
         window.scrollTo(0, 0);
-        if (viewId === 'categories') app.renderCategories();
         if (viewId === 'settings') app.renderSettings();
         if (viewId === 'home') { store.selection = null; app.renderHome(); }
     },
 
-    filterAccounts: (type) => { if (type === 'all') app.exitFolder(); },
+    // --- FILTRO POR CATEGORÍA ---
+    matchesFilter: (acc) => store.categoryFilter === null || store.categoryFilter.has(String(acc.categoryId)),
 
-    toggleTheme: () => {
-        store.theme = store.theme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('cc_theme', store.theme);
-        app.applyTheme();
-    },
-    applyTheme: () => {
-        document.documentElement.classList.toggle('dark', store.theme === 'dark');
-        app.applyColors();
+    // Cuentas de una carpeta que además pasan el filtro.
+    visibleIn: (folderId) => app.accountsIn(folderId).filter(app.matchesFilter),
+
+    toggleAllCategories: () => {
+        // "Todas" activo -> deselecciona todo; si no -> selecciona todo.
+        store.categoryFilter = store.categoryFilter === null ? new Set() : null;
+        app.renderHome();
     },
 
-    applyColors: () => {
-        const palette = store.colors[store.theme] || defaultColors[store.theme];
-        Object.entries(palette).forEach(([key, hex]) => {
-            const rgb = utils.hexToRgb(hex);
-            if (rgb) document.documentElement.style.setProperty(`--c-${key}`, rgb);
+    toggleCategoryFilter: (id) => {
+        const all = store.categories.map(c => String(c.id));
+        let set;
+        if (store.categoryFilter === null) {
+            // Con "Todas" puesto, tocar una categoría deja solo esa.
+            set = new Set([id]);
+        } else {
+            set = new Set(store.categoryFilter);
+            if (set.has(id)) set.delete(id); else set.add(id);
+        }
+        // Si quedaron todas marcadas, vuelve a "Todas" para que el chip lo muestre.
+        store.categoryFilter = (set.size === all.length && all.every(x => set.has(x))) ? null : set;
+        app.renderHome();
+    },
+
+    renderFilters: () => {
+        const wrap = document.getElementById('home-filters');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+
+        const chip = (label, active, onClick) => {
+            const b = document.createElement('button');
+            b.className = 'px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition ' +
+                (active ? 'bg-primary text-on-primary shadow-md shadow-primary/30' : 'bg-content/10 text-muted');
+            b.innerText = label;
+            b.onclick = onClick;
+            return b;
+        };
+
+        wrap.appendChild(chip('Todas', store.categoryFilter === null, () => app.toggleAllCategories()));
+        store.categories.forEach(cat => {
+            const id = String(cat.id);
+            const active = store.categoryFilter === null || store.categoryFilter.has(id);
+            wrap.appendChild(chip(`${cat.emoji} ${cat.name}`, active, () => app.toggleCategoryFilter(id)));
         });
+    },
+
+    activeTheme: () => store.themes.find(t => t.id === store.themeId) || store.themes[0] || factoryThemes[1],
+
+    applyTheme: () => app.applyColors(app.activeTheme().colors),
+
+    applyColors: (palette) => {
+        const root = document.documentElement;
+        THEME_KEYS.forEach(key => {
+            const rgb = utils.hexToRgb(palette[key]);
+            if (rgb) root.style.setProperty(`--c-${key}`, rgb);
+        });
+        root.style.setProperty('--c-on-primary', utils.contrastOn(palette.primary));
+        root.style.setProperty('--c-on-secondary', utils.contrastOn(palette.secondary));
+        // La clase .dark ya no pinta nada (todo va por variables), pero define
+        // color-scheme para que los selectores nativos de fecha y color no
+        // salgan blancos sobre un tema oscuro.
+        const dark = utils.isDarkColor(palette.base);
+        root.classList.toggle('dark', dark);
+        root.style.colorScheme = dark ? 'dark' : 'light';
     },
 
     // --- CONFIRMATION ---
@@ -299,6 +440,8 @@ const app = {
 
     // --- EXPORT LOGIC ---
     showExportModal: () => {
+        const btn = document.getElementById('export-share-btn');
+        if (btn) btn.onclick = () => { app.closeExportModal(); app.showShareModal('account', store.currentAccountId); };
         const modal = document.getElementById('modal-export');
         const panel = document.getElementById('modal-export-panel');
         modal.classList.remove('hidden');
@@ -692,7 +835,7 @@ const app = {
     // --- CARPETAS Y SELECCION ---
     accountsIn: (folderId) => store.accounts.filter(a => (a.folderId || null) === (folderId || null)),
 
-    folderTotal: (folderId) => app.accountsIn(folderId)
+    folderTotal: (folderId) => app.visibleIn(folderId)
         .reduce((sum, a) => sum + (a.expenses || []).reduce((t, e) => t + Number(e.amount), 0), 0),
 
     nextFolderName: () => {
@@ -750,7 +893,7 @@ const app = {
 
     toggleSelectAll: () => {
         if (!store.selection) return;
-        const ids = app.accountsIn(store.currentFolderId).map(a => a.id);
+        const ids = app.visibleIn(store.currentFolderId).map(a => a.id);
         store.selection = store.selection.size === ids.length ? new Set() : new Set(ids);
         app.renderHome();
     },
@@ -828,12 +971,12 @@ const app = {
 
     moveRow: (icon, label, sub, onClick) => {
         const b = document.createElement('button');
-        b.className = 'w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-left';
+        b.className = 'w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition text-left';
         b.innerHTML = `
-            <div class="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full text-primary shrink-0"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+            <div class="bg-primary/15 p-3 rounded-full text-primary shrink-0"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
             <div class="min-w-0">
-                <h4 class="font-bold text-gray-900 dark:text-white truncate">${label}</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400">${sub}</p>
+                <h4 class="font-bold text-content truncate">${label}</h4>
+                <p class="text-xs text-muted">${sub}</p>
             </div>`;
         b.onclick = onClick;
         return b;
@@ -917,14 +1060,13 @@ const app = {
         if (!store.selection || store.selection.size === 0) return;
         const n = store.selection.size;
         const ghost = document.createElement('div');
-        ghost.className = 'fixed z-[90] pointer-events-none bg-primary text-white px-4 py-3 rounded-xl shadow-2xl font-bold text-sm flex items-center gap-2 -translate-x-1/2 -translate-y-1/2';
+        ghost.className = 'fixed z-[90] pointer-events-none bg-primary text-on-primary px-4 py-3 rounded-xl shadow-2xl font-bold text-sm flex items-center gap-2 -translate-x-1/2 -translate-y-1/2';
         ghost.innerHTML = `<i data-lucide="folder" class="w-4 h-4"></i> ${n} ${n === 1 ? 'cuenta' : 'cuentas'}`;
         document.body.appendChild(ghost);
         lucide.createIcons();
 
         app.drag = { ghost, x, y, overId: null };
         document.body.style.touchAction = 'none';
-        document.body.style.userSelect = 'none';
         app.moveDrag(x, y);
 
         document.addEventListener('pointermove', app.onDragMove, { passive: false });
@@ -960,7 +1102,6 @@ const app = {
         document.removeEventListener('pointercancel', app.onDragEnd);
         d.ghost.remove();
         document.body.style.touchAction = '';
-        document.body.style.userSelect = '';
         document.querySelectorAll('[data-folder-id]').forEach(el => el.classList.remove('drop-target'));
 
         const target = d.overId;
@@ -993,19 +1134,22 @@ const app = {
         show('home-filters', !selecting);
         show('home-select-actions', selecting);
         show('home-select-all', selecting);
+        show('home-folder-share', !selecting && inFolder);
         show('home-settings-btn', !selecting);
-        show('home-theme-btn', !selecting);
         show('home-fab', !selecting);
 
         if (inFolder) {
             const f = store.folders.find(x => x.id === store.currentFolderId);
-            const n = app.accountsIn(store.currentFolderId).length;
+            const total = app.accountsIn(store.currentFolderId).length;
+            const shown = app.visibleIn(store.currentFolderId).length;
             document.getElementById('home-folder-name').innerText = f ? f.name : 'Carpeta';
-            document.getElementById('home-folder-meta').innerText = `${n} ${n === 1 ? 'cuenta' : 'cuentas'}`;
+            document.getElementById('home-folder-meta').innerText = store.categoryFilter === null
+                ? `${total} ${total === 1 ? 'cuenta' : 'cuentas'}`
+                : `${shown} de ${total}`;
         }
         if (selecting) {
             const n = store.selection.size;
-            const all = app.accountsIn(store.currentFolderId).length;
+            const all = app.visibleIn(store.currentFolderId).length;
             document.getElementById('home-select-count').innerText = `${n} ${n === 1 ? 'seleccionada' : 'seleccionadas'}`;
             document.getElementById('home-select-all').innerText = (all > 0 && n === all) ? 'Ninguna' : 'Todas';
         }
@@ -1014,21 +1158,32 @@ const app = {
     renderHome: () => {
         const list = document.getElementById('accounts-list');
         app.syncHomeChrome();
+        app.renderFilters();
         list.innerHTML = '';
 
         const folderId = store.currentFolderId;
-        const accounts = app.accountsIn(folderId);
-        const folders = folderId ? [] : store.folders;
+        const accounts = app.visibleIn(folderId);
+        // Sin filtro se listan todas las carpetas (incluidas las vacías); con
+        // filtro solo las que tienen alguna cuenta que pase.
+        const folders = folderId ? []
+            : (store.categoryFilter === null ? store.folders
+                                             : store.folders.filter(f => app.visibleIn(f.id).length > 0));
+
+        if (folders.length === 0 && accounts.length === 0 && store.categoryFilter !== null) {
+            list.innerHTML = `<div class="text-center py-10 text-muted bg-surface rounded-xl border border-dashed border-line text-sm">Ninguna cuenta con las categorías elegidas.<br>Ajusta los filtros de arriba.</div>`;
+            lucide.createIcons();
+            return;
+        }
 
         if (folders.length === 0 && accounts.length === 0) {
             list.innerHTML = folderId
-                ? `<div class="text-center py-10 text-gray-400 bg-gray-50 dark:bg-cardDark rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-sm">Esta carpeta está vacía.<br>Arrastra cuentas aquí o usa "Mover a…".</div>`
+                ? `<div class="text-center py-10 text-muted bg-surface rounded-xl border border-dashed border-line text-sm">Esta carpeta está vacía.<br>Arrastra cuentas aquí o usa "Mover a…".</div>`
                 : `
                 <div class="flex flex-col items-center justify-center text-center h-full min-h-[60vh] px-6">
-                    <img src="${import.meta.env.BASE_URL}logo.svg" alt="" width="96" height="96" class="w-24 h-24 mb-6">
-                    <h2 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 pb-1">Cuentas Claras</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">Aún no tienes cuentas. Crea la primera para empezar a dividir gastos.</p>
-                    <button onclick="app.showAddAccountModal()" class="bg-primary text-white px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-primary/30 ios-btn flex items-center gap-2">
+                    <img src="${import.meta.env.BASE_URL}logo.svg" alt="" draggable="false" width="96" height="96" class="w-24 h-24 mb-6">
+                    <h2 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 pb-1">Cuentas Claras</h2>
+                    <p class="text-sm text-muted mt-2 mb-8">Aún no tienes cuentas. Crea la primera para empezar a dividir gastos.</p>
+                    <button onclick="app.showAddAccountModal()" class="bg-primary text-on-primary px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-primary/30 ios-btn flex items-center gap-2">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                         Nueva cuenta
                     </button>
@@ -1043,27 +1198,31 @@ const app = {
     },
 
     folderCard: (f) => {
-        const n = app.accountsIn(f.id).length;
+        const total = app.accountsIn(f.id).length;
+        const shown = app.visibleIn(f.id).length;
+        const cuenta = store.categoryFilter === null
+            ? `${total} ${total === 1 ? 'cuenta' : 'cuentas'}`
+            : `${shown} de ${total}`;
         const selecting = !!store.selection;
         const el = document.createElement('div');
         el.dataset.folderId = f.id;
-        el.className = 'bg-surface p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer';
+        el.className = 'bg-surface p-4 rounded-xl shadow-sm border border-line flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer';
         el.innerHTML = `
             <div class="flex items-center gap-3 flex-1 min-w-0">
-                <div class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-primary shrink-0">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     <i data-lucide="folder" class="w-6 h-6"></i>
                 </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-gray-800 dark:text-gray-100 truncate">${f.name}</h3>
-                    <p class="text-xs font-medium text-primary">${n} ${n === 1 ? 'cuenta' : 'cuentas'} · ${utils.formatCurrency(app.folderTotal(f.id))}</p>
+                    <h3 class="font-bold text-content truncate">${f.name}</h3>
+                    <p class="text-xs font-medium text-primary">${cuenta} · ${utils.formatCurrency(app.folderTotal(f.id))}</p>
                 </div>
             </div>
             ${selecting ? '<span class="text-xs font-bold text-primary shrink-0 pl-2">Soltar aquí</span>' : `
             <div class="flex items-center gap-1 shrink-0">
-                <button onclick="app.renameFolder('${f.id}', event)" aria-label="Renombrar carpeta" class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary transition rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                <button onclick="app.renameFolder('${f.id}', event)" aria-label="Renombrar carpeta" class="w-11 h-11 flex items-center justify-center text-muted hover:text-primary transition rounded-full hover:bg-primary/10">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
-                <button onclick="app.deleteFolder('${f.id}', event)" aria-label="Eliminar carpeta" class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-red-500 transition rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+                <button onclick="app.deleteFolder('${f.id}', event)" aria-label="Eliminar carpeta" class="w-11 h-11 flex items-center justify-center text-muted hover:text-danger transition rounded-full hover:bg-danger/10">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>`}`;
@@ -1085,25 +1244,25 @@ const app = {
 
         const el = document.createElement('div');
         el.dataset.accountId = acc.id;
-        el.className = `bg-surface p-4 rounded-xl shadow-sm border flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer group ${selected ? 'border-primary ring-2 ring-primary/40' : 'border-gray-100 dark:border-gray-800'}`;
+        el.className = `bg-surface p-4 rounded-xl shadow-sm border flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer group ${selected ? 'border-primary ring-2 ring-primary/40' : 'border-line'}`;
         el.innerHTML = `
             <div class="flex items-center gap-3 flex-1 min-w-0">
-                ${selecting ? `<div class="w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center ${selected ? 'bg-primary border-primary text-white' : 'border-gray-300 dark:border-gray-600'}">${selected ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>` : ''}
-                <div class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-2xl shrink-0">${cat.emoji}</div>
+                ${selecting ? `<div class="w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center ${selected ? 'bg-primary border-primary text-on-primary' : 'border-line'}">${selected ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>` : ''}
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl shrink-0">${cat.emoji}</div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-gray-800 dark:text-gray-100 truncate">${acc.name}</h3>
+                    <h3 class="font-bold text-content truncate">${acc.name}</h3>
                     <div class="flex items-center gap-2">
                         <p class="text-xs font-medium text-primary">${utils.formatCurrency(total)}</p>
-                        ${isSettled ? '<span class="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex items-center gap-0.5"><i data-lucide="check" class="w-3 h-3"></i> SALDADO</span>' : ''}
+                        ${isSettled ? '<span class="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/30 flex items-center gap-0.5"><i data-lucide="check" class="w-3 h-3"></i> SALDADO</span>' : ''}
                     </div>
                 </div>
             </div>
             ${selecting ? '' : `
             <div class="flex items-center gap-1 shrink-0">
-                <button onclick="app.showEditAccountModal('${acc.id}', event)" aria-label="Editar cuenta" class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary transition rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                <button onclick="app.showEditAccountModal('${acc.id}', event)" aria-label="Editar cuenta" class="w-11 h-11 flex items-center justify-center text-muted hover:text-primary transition rounded-full hover:bg-primary/10">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                 </button>
-                <button onclick="app.deleteAccountFromHome('${acc.id}', event)" aria-label="Eliminar cuenta" class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-red-500 transition rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+                <button onclick="app.deleteAccountFromHome('${acc.id}', event)" aria-label="Eliminar cuenta" class="w-11 h-11 flex items-center justify-center text-muted hover:text-danger transition rounded-full hover:bg-danger/10">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>`}`;
@@ -1157,7 +1316,7 @@ const app = {
             const btn = document.createElement('button');
             btn.onclick = () => app.showAddParticipantModal();
             btn.className = 'flex flex-col items-center gap-1 min-w-[60px]';
-            btn.innerHTML = `<div class="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-primary hover:bg-gray-100 transition"><i data-lucide="plus" class="w-5 h-5"></i></div><span class="text-[10px] text-gray-500">Añadir</span>`;
+            btn.innerHTML = `<div class="w-10 h-10 rounded-full bg-content/5 border border-line flex items-center justify-center text-primary hover:bg-content/10 transition"><i data-lucide="plus" class="w-5 h-5"></i></div><span class="text-[10px] text-muted">Añadir</span>`;
             return btn;
         };
 
@@ -1170,14 +1329,14 @@ const app = {
                 el.onclick = () => app.confirmDeleteParticipant(p.id, p.name);
                 el.innerHTML = `
                     <div class="relative w-10 h-10">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm shadow-sm border-2 border-white dark:border-cardDark">
+                        <div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shadow-sm border-2 border-surface">
                             ${p.name.substring(0,2).toUpperCase()}
                         </div>
-                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition shadow-sm border border-white dark:border-dark">
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition shadow-sm border border-base">
                             <i data-lucide="x" class="w-2 h-2"></i>
                         </div>
                     </div>
-                    <span class="text-[10px] text-gray-600 dark:text-gray-400 truncate w-full text-center group-hover:text-red-500 transition">${p.name}</span>
+                    <span class="text-[10px] text-muted truncate w-full text-center group-hover:text-danger transition">${p.name}</span>
                 `;
                 partList.appendChild(el);
             });
@@ -1194,22 +1353,22 @@ const app = {
         ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
         if (allItems.length === 0) {
-            expList.innerHTML = `<div class="text-center py-8 text-gray-400 bg-gray-50 dark:bg-cardDark rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-sm">No hay actividad.<br>¡Añade un gasto!</div>`;
+            expList.innerHTML = `<div class="text-center py-8 text-muted bg-surface rounded-xl border border-dashed border-line text-sm">No hay actividad.<br>¡Añade un gasto!</div>`;
         } else {
             allItems.forEach((item) => {
                 const el = document.createElement('div');
                 if (item.kind === 'expense') {
-                    el.className = 'flex items-center justify-between p-3 bg-surface rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer active:scale-[0.99] transition-transform';
+                    el.className = 'flex items-center justify-between p-3 bg-surface rounded-xl border border-line cursor-pointer active:scale-[0.99] transition-transform';
                     el.onclick = (ev) => { if (!ev.target.closest('button')) app.showEditExpenseModal(item.id); };
-                    const dateBadge = item.userDate ? `<span class="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1.5 py-0.5 rounded ml-2">${utils.formatDate(item.userDate).slice(0,5)}</span>` : '';
+                    const dateBadge = item.userDate ? `<span class="text-[10px] bg-content/10 text-muted px-1.5 py-0.5 rounded ml-2">${utils.formatDate(item.userDate).slice(0,5)}</span>` : '';
                     
                     // Visualización si es personal
-                    let infoLine = `<p class="text-xs text-gray-500">Pagó: ${item.payer}</p>`;
-                    let icon = `<div class="bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-lg text-primary shrink-0"><i data-lucide="receipt" class="w-5 h-5"></i></div>`;
+                    let infoLine = `<p class="text-xs text-muted">Pagó: ${item.payer}</p>`;
+                    let icon = `<div class="bg-primary/10 p-2 rounded-lg text-primary shrink-0"><i data-lucide="receipt" class="w-5 h-5"></i></div>`;
                     
                     if (item.type === 'individual') {
-                        icon = `<div class="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg text-amber-500 shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
-                        infoLine = `<p class="text-xs text-amber-600 dark:text-amber-500 font-medium">Personal: ${item.payer} <i data-lucide="arrow-right" class="w-3 h-3 inline"></i> ${item.beneficiary}</p>`;
+                        icon = `<div class="bg-amber-500/10 p-2 rounded-lg text-amber-500 shrink-0"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+                        infoLine = `<p class="text-xs text-amber-500 font-medium">Personal: ${item.payer} <i data-lucide="arrow-right" class="w-3 h-3 inline"></i> ${item.beneficiary}</p>`;
                     }
 
                     el.innerHTML = `
@@ -1217,30 +1376,30 @@ const app = {
                             ${icon}
                             <div class="truncate">
                                 <div class="flex items-center">
-                                    <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">${item.desc}</h4>
+                                    <h4 class="font-bold text-content text-sm truncate">${item.desc}</h4>
                                     ${dateBadge}
                                 </div>
                                 ${infoLine}
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
-                            <span class="font-bold text-gray-900 dark:text-white">${utils.formatCurrency(item.amount)}</span>
-                            <button onclick="app.deleteExpense('${item.id}')" aria-label="Eliminar gasto" class="w-10 h-10 -mr-1 shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <span class="font-bold text-content">${utils.formatCurrency(item.amount)}</span>
+                            <button onclick="app.deleteExpense('${item.id}')" aria-label="Eliminar gasto" class="w-10 h-10 -mr-1 shrink-0 flex items-center justify-center text-muted hover:text-danger rounded-full hover:bg-danger/10 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     `;
                 } else {
-                    el.className = 'flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30';
+                    el.className = 'flex items-center justify-between p-3 bg-secondary/10 rounded-xl border border-secondary/30';
                     el.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <div class="bg-green-100 dark:bg-green-900/40 p-2 rounded-lg text-green-600 shrink-0"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+                            <div class="bg-secondary/20 p-2 rounded-lg text-secondary shrink-0"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
                             <div>
-                                <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm">Pago registrado</h4>
-                                <p class="text-xs text-gray-500">${item.from} pagó a ${item.to}</p>
+                                <h4 class="font-bold text-content text-sm">Pago registrado</h4>
+                                <p class="text-xs text-muted">${item.from} pagó a ${item.to}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
-                            <span class="font-bold text-green-600 dark:text-green-400">${utils.formatCurrency(item.amount)}</span>
-                            <button onclick="app.deletePayment('${item.id}')" aria-label="Eliminar pago" class="w-10 h-10 -mr-1 shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <span class="font-bold text-secondary">${utils.formatCurrency(item.amount)}</span>
+                            <button onclick="app.deletePayment('${item.id}')" aria-label="Eliminar pago" class="w-10 h-10 -mr-1 shrink-0 flex items-center justify-center text-muted hover:text-danger rounded-full hover:bg-danger/10 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     `;
                 }
@@ -1318,21 +1477,21 @@ const app = {
         list.innerHTML = '';
 
         if (transactions.length === 0) {
-            list.innerHTML = `<div class="text-center py-6"><div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 text-green-600"><i data-lucide="check" class="w-8 h-8"></i></div><p class="text-gray-500 font-medium">¡Todo pagado! Nadie debe nada.</p></div>`;
+            list.innerHTML = `<div class="text-center py-6"><div class="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-3 text-secondary"><i data-lucide="check" class="w-8 h-8"></i></div><p class="text-muted font-medium">¡Todo pagado! Nadie debe nada.</p></div>`;
         } else {
             transactions.forEach(t => {
                 const el = document.createElement('div');
-                el.className = 'flex items-center justify-between p-4 bg-surface rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm';
+                el.className = 'flex items-center justify-between p-4 bg-surface rounded-xl border border-line shadow-sm';
                 el.innerHTML = `
                     <div class="flex flex-col flex-1 min-w-0 mr-3">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-gray-900 dark:text-white">${t.from}</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
-                            <span class="font-bold text-gray-900 dark:text-white">${t.to}</span>
+                            <span class="font-bold text-content">${t.from}</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-muted"></i>
+                            <span class="font-bold text-content">${t.to}</span>
                         </div>
                         <span class="text-lg font-bold text-primary">${utils.formatCurrency(t.amount)}</span>
                     </div>
-                    <button onclick="app.settleDebt('${t.from}', '${t.to}', ${t.amount})" class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-200 transition flex items-center gap-1">
+                    <button onclick="app.settleDebt('${t.from}', '${t.to}', ${t.amount})" class="bg-secondary/20 text-secondary px-4 py-2 rounded-lg text-sm font-bold hover:bg-secondary/30 transition flex items-center gap-1">
                         <i data-lucide="check" class="w-4 h-4"></i> Saldar
                     </button>
                 `;
@@ -1539,55 +1698,345 @@ const app = {
         utils.showToast('Gasto guardado');
     },
     
-    // --- CONFIGURACION ---
+    // --- CONFIGURACION: TEMAS ---
     renderSettings: () => {
-        const wrap = document.getElementById('settings-colors');
+        app.renderThemes();
+        store.editingCategoryIndex = null;
+        document.getElementById('cat-name').value = '';
+        document.getElementById('cat-emoji').value = '';
+        app.syncCategoryForm();
+        app.renderCategories();
+    },
+
+    renderThemes: () => {
+        const wrap = document.getElementById('settings-themes');
         wrap.innerHTML = '';
 
-        [['light', 'Tema Claro', 'sun'], ['dark', 'Tema Oscuro', 'moon']].forEach(([theme, title, icon]) => {
-            const group = document.createElement('div');
-            const isActive = store.theme === theme;
-            group.innerHTML = `
-                <div class="flex items-center gap-2 mb-2 px-1">
-                    <i data-lucide="${icon}" class="w-4 h-4 text-gray-400"></i>
-                    <h4 class="font-bold text-sm text-gray-600 dark:text-gray-300">${title}</h4>
-                    ${isActive ? '<span class="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">ACTIVO</span>' : ''}
+        store.themes.forEach(theme => {
+            const c = theme.colors;
+            const isActive = theme.id === store.themeId;
+            const el = document.createElement('div');
+            el.className = `rounded-xl overflow-hidden border transition cursor-pointer ${isActive ? 'border-primary ring-2 ring-primary/40' : 'border-line'}`;
+            // La miniatura se pinta con los colores del tema, no con los del
+            // tema activo: por eso va en style y no en clases.
+            el.innerHTML = `
+                <div class="p-3 h-20 flex flex-col justify-center gap-1.5" style="background:${c.base}">
+                    <div class="rounded-lg p-2 flex items-center gap-2" style="background:${c.surface};border:1px solid ${c.line}">
+                        <div class="w-4 h-4 rounded-full shrink-0" style="background:${c.primary}"></div>
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <div class="h-1.5 rounded-full w-4/5" style="background:${c.content}"></div>
+                            <div class="h-1.5 rounded-full w-1/2" style="background:${c.muted}"></div>
+                        </div>
+                        <div class="w-3 h-3 rounded-full shrink-0" style="background:${c.secondary}"></div>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    ${Object.keys(colorLabels).map(key => `
-                        <label class="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface border border-gray-100 dark:border-gray-800 cursor-pointer">
-                            <div class="min-w-0">
-                                <h5 class="font-bold text-sm text-gray-800 dark:text-gray-100">${colorLabels[key][0]}</h5>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${colorLabels[key][1]}</p>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span id="color-hex-${theme}-${key}" class="text-xs text-gray-400 tabular-nums">${store.colors[theme][key]}</span>
-                                <input type="color" id="color-${theme}-${key}" value="${store.colors[theme][key]}" aria-label="${colorLabels[key][0]} (${title})" oninput="app.setColor('${theme}', '${key}', this.value)" class="w-10 h-10 rounded-lg">
-                            </div>
-                        </label>`).join('')}
+                <div class="bg-surface px-3 py-2 flex items-center justify-between gap-1">
+                    <div class="min-w-0 flex items-center gap-1.5">
+                        ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-primary shrink-0"></i>' : ''}
+                        <span class="text-xs font-bold truncate ${isActive ? 'text-primary' : 'text-content'}">${theme.name}</span>
+                    </div>
+                    <div class="flex items-center shrink-0">
+                        <button onclick="app.showThemeModal('${theme.id}', event)" aria-label="Editar ${theme.name}" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-primary hover:bg-primary/10 transition">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="app.deleteTheme('${theme.id}', event)" aria-label="Eliminar ${theme.name}" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-danger hover:bg-danger/10 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>`;
-            wrap.appendChild(group);
+            el.onclick = (e) => { if (!e.target.closest('button')) app.selectTheme(theme.id); };
+            wrap.appendChild(el);
         });
+
+        const add = document.createElement('button');
+        add.className = 'rounded-xl border border-dashed border-line bg-content/5 hover:bg-content/10 transition flex flex-col items-center justify-center gap-2 min-h-[7.5rem] text-primary';
+        add.onclick = () => app.showThemeModal();
+        add.innerHTML = '<i data-lucide="plus" class="w-6 h-6"></i><span class="text-xs font-bold">Nuevo tema</span>';
+        wrap.appendChild(add);
+
         lucide.createIcons();
     },
 
-    setColor: (theme, key, hex) => {
-        if (!store.colors[theme] || !utils.hexToRgb(hex)) return;
-        store.colors[theme][key] = hex.toUpperCase();
+    selectTheme: (id) => {
+        if (!store.themes.some(t => t.id === id)) return;
+        store.themeId = id;
         utils.save();
-        if (theme === store.theme) app.applyColors();
-        const label = document.getElementById(`color-hex-${theme}-${key}`);
-        if (label) label.innerText = store.colors[theme][key];
+        app.applyTheme();
+        app.renderThemes();
     },
 
-    resetColors: () => {
-        app.confirmAction('Se vuelven a los colores de fábrica en los dos temas.', () => {
-            store.colors = { light: { ...defaultColors.light }, dark: { ...defaultColors.dark } };
+    uniqueThemeName: (base) => {
+        const taken = new Set(store.themes.map(t => t.name));
+        if (!taken.has(base)) return base;
+        let n = 2;
+        while (taken.has(`${base} ${n}`)) n++;
+        return `${base} ${n}`;
+    },
+
+    showThemeModal: (id, event) => {
+        if (event) event.stopPropagation();
+        const existing = id ? store.themes.find(t => t.id === id) : null;
+        if (id && !existing) return;
+
+        store.themeDraft = existing
+            ? { id: existing.id, name: existing.name, colors: { ...existing.colors }, isNew: false }
+            : { id: utils.generateId(), name: app.uniqueThemeName('Mi tema'), colors: { ...app.activeTheme().colors }, isNew: true };
+
+        document.getElementById('theme-modal-title').innerText = existing ? 'Editar Tema' : 'Nuevo Tema';
+        document.getElementById('theme-name').value = store.themeDraft.name;
+
+        const list = document.getElementById('theme-colors');
+        list.innerHTML = THEME_KEYS.map(key => `
+            <label class="flex items-center justify-between gap-3 p-3 rounded-xl bg-content/5 border border-line cursor-pointer">
+                <div class="min-w-0">
+                    <h5 class="font-bold text-sm text-content">${themeLabels[key][0]}</h5>
+                    <p class="text-xs text-muted truncate">${themeLabels[key][1]}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span id="theme-hex-${key}" class="text-xs text-muted tabular-nums">${store.themeDraft.colors[key]}</span>
+                    <input type="color" id="theme-color-${key}" value="${store.themeDraft.colors[key]}" aria-label="${themeLabels[key][0]}" oninput="app.setDraftColor('${key}', this.value)" class="w-10 h-10 rounded-lg">
+                </div>
+            </label>`).join('');
+
+        const btn = document.getElementById('theme-save');
+        const fresh = btn.cloneNode(true);
+        btn.parentNode.replaceChild(fresh, btn);
+        fresh.innerText = existing ? 'Guardar cambios' : 'Crear tema';
+        fresh.onclick = () => app.saveTheme();
+
+        const modal = document.getElementById('modal-theme');
+        const panel = document.getElementById('modal-theme-panel');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
+    },
+
+    setDraftColor: (key, hex) => {
+        const draft = store.themeDraft;
+        if (!draft || !utils.hexToRgb(hex)) return;
+        draft.colors[key] = hex.toUpperCase();
+        const label = document.getElementById(`theme-hex-${key}`);
+        if (label) label.innerText = draft.colors[key];
+        // Vista previa en vivo solo si estás editando el tema que está puesto.
+        if (draft.id === store.themeId) app.applyColors(draft.colors);
+    },
+
+    saveTheme: () => {
+        const draft = store.themeDraft;
+        if (!draft) return;
+        const name = document.getElementById('theme-name').value.trim();
+        if (!name) return utils.showToast('Ponle un nombre al tema');
+        draft.name = name;
+
+        const saved = { id: draft.id, name: draft.name, colors: { ...draft.colors } };
+        const i = store.themes.findIndex(t => t.id === draft.id);
+        if (i === -1) store.themes.push(saved);
+        else store.themes[i] = saved;
+
+        if (draft.isNew) store.themeId = saved.id;
+        store.themeDraft = null;
+        utils.save();
+        app.applyTheme();
+        app.renderThemes();
+        app.closeThemeModal();
+        utils.showToast(draft.isNew ? `Tema "${name}" creado` : 'Tema actualizado');
+    },
+
+    deleteTheme: (id, event) => {
+        if (event) event.stopPropagation();
+        const theme = store.themes.find(t => t.id === id);
+        if (!theme) return;
+        if (store.themes.length === 1) return utils.showToast('Tiene que quedar al menos un tema');
+
+        app.confirmAction(`¿Borrar el tema "${theme.name}"?`, () => {
+            store.themes = store.themes.filter(t => t.id !== id);
+            if (store.themeId === id) store.themeId = store.themes[0].id;
             utils.save();
-            app.applyColors();
-            app.renderSettings();
-            utils.showToast('Colores restaurados');
+            app.applyTheme();
+            app.renderThemes();
+            utils.showToast('Tema eliminado');
+        });
+    },
+
+    resetThemes: () => {
+        app.confirmAction('Vuelven los 5 temas de fábrica y se descartan los personalizados.', () => {
+            store.themes = cloneFactory();
+            if (!store.themes.some(t => t.id === store.themeId)) store.themeId = 'dark';
+            utils.save();
+            app.applyTheme();
+            app.renderThemes();
+            utils.showToast('Temas restaurados');
         }, 'Restaurar');
+    },
+
+    closeThemeModal: () => {
+        store.themeDraft = null;
+        app.applyTheme();   // descarta la vista previa en vivo
+        const modal = document.getElementById('modal-theme');
+        const panel = document.getElementById('modal-theme-panel');
+        modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    // --- COMPARTIR ---
+    // Más allá de esto el QR queda tan denso que cuesta escanearlo desde una
+    // pantalla; a partir de acá se ofrece enlace o archivo.
+    SHARE_QR_LIMIT: 2200,
+
+    categoriesFor: (accounts) => {
+        const ids = new Set(accounts.map(a => String(a.categoryId)));
+        return store.categories.filter(c => ids.has(String(c.id)));
+    },
+
+    buildSharePayload: (kind, id) => {
+        // folderId no viaja: los ids de carpeta del que recibe son otros.
+        const strip = (a) => { const { folderId, ...resto } = a; return resto; };
+        if (kind === 'folder') {
+            const folder = store.folders.find(f => f.id === id);
+            if (!folder) return null;
+            const accounts = app.accountsIn(id);
+            if (!accounts.length) return null;
+            return { v: 1, k: 'folder', name: folder.name, accounts: accounts.map(strip), categories: app.categoriesFor(accounts) };
+        }
+        const acc = store.accounts.find(a => a.id === id);
+        if (!acc) return null;
+        return { v: 1, k: 'account', name: acc.name, accounts: [strip(acc)], categories: app.categoriesFor([acc]) };
+    },
+
+    encodeShare: async (payload) => {
+        const bytes = new TextEncoder().encode(JSON.stringify(payload));
+        if (typeof CompressionStream !== 'function') return '0' + utils.toBase64Url(bytes);
+        const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+        return '1' + utils.toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+    },
+
+    decodeShare: async (code) => {
+        let bytes = utils.fromBase64Url(code.slice(1));
+        if (code[0] === '1') {
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+            bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+        return JSON.parse(new TextDecoder().decode(bytes));
+    },
+
+    shareCurrentFolder: () => app.showShareModal('folder', store.currentFolderId),
+
+    showShareModal: async (kind, id, event) => {
+        if (event) event.stopPropagation();
+        const payload = app.buildSharePayload(kind, id);
+        if (!payload) return utils.showToast('No hay nada para compartir');
+
+        const code = await app.encodeShare(payload);
+        const url = `${location.origin}${import.meta.env.BASE_URL}#s=${code}`;
+        store.share = { payload, url };
+
+        const nGastos = payload.accounts.reduce((n, a) => n + (a.expenses || []).length, 0);
+        document.getElementById('share-title').innerText = `Compartir ${payload.name}`;
+        document.getElementById('share-sub').innerText =
+            `${payload.accounts.length} ${payload.accounts.length === 1 ? 'cuenta' : 'cuentas'} · ${nGastos} ${nGastos === 1 ? 'gasto' : 'gastos'}`;
+
+        const cabe = code.length <= app.SHARE_QR_LIMIT;
+        document.getElementById('share-qr-wrap').classList.toggle('hidden', !cabe);
+        document.getElementById('share-qr-hint').classList.toggle('hidden', !cabe);
+        document.getElementById('share-too-big').classList.toggle('hidden', cabe);
+        if (cabe) {
+            const QR = (await import('qrcode')).default;
+            document.getElementById('share-qr').innerHTML = await QR.toString(url, {
+                type: 'svg', errorCorrectionLevel: 'L', margin: 1,
+                color: { dark: '#000000', light: '#FFFFFF' }
+            });
+            const svg = document.querySelector('#share-qr svg');
+            if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); }
+        }
+
+        const modal = document.getElementById('modal-share');
+        const panel = document.getElementById('modal-share-panel');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
+        lucide.createIcons();
+    },
+
+    closeShareModal: () => {
+        store.share = null;
+        const modal = document.getElementById('modal-share');
+        const panel = document.getElementById('modal-share-panel');
+        modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    shareLink: async () => {
+        if (!store.share) return;
+        const { payload, url } = store.share;
+        const texto = `Te comparto "${payload.name}" de Cuentas Claras`;
+        try {
+            if (navigator.share) { await navigator.share({ title: payload.name, text: texto, url }); return; }
+            await navigator.clipboard.writeText(url);
+            utils.showToast('Enlace copiado');
+        } catch (e) { /* el usuario canceló la hoja de compartir */ }
+    },
+
+    shareFile: async () => {
+        if (!store.share) return;
+        const { payload } = store.share;
+        const nombre = `${payload.name.replace(/\s+/g, '-')}.json`;
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        try {
+            const file = new File([blob], nombre, { type: 'application/json' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: payload.name });
+                return;
+            }
+        } catch (e) { /* cae a la descarga */ }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = nombre; link.click();
+        URL.revokeObjectURL(url);
+        utils.showToast('Archivo descargado');
+    },
+
+    // --- RECIBIR ---
+    checkIncomingShare: async () => {
+        const m = /^#s=(.+)$/.exec(location.hash);
+        if (!m) return;
+        // Se limpia el hash ya: si no, recargar volvería a ofrecer la importación.
+        history.replaceState(null, '', location.pathname + location.search);
+
+        let payload;
+        try { payload = await app.decodeShare(m[1]); }
+        catch (e) { return utils.showToast('El enlace compartido no se pudo leer'); }
+        if (!payload || !Array.isArray(payload.accounts) || !payload.accounts.length) {
+            return utils.showToast('El enlace no trae cuentas');
+        }
+
+        const nombre = utils.clean(payload.name || 'lo compartido');
+        const nCuentas = payload.accounts.length;
+        const nGastos = payload.accounts.reduce((n, a) => n + ((a && a.expenses) || []).length, 0);
+        const detalle = payload.k === 'folder'
+            ? `la carpeta "${nombre}" con ${nCuentas} ${nCuentas === 1 ? 'cuenta' : 'cuentas'} y ${nGastos} ${nGastos === 1 ? 'gasto' : 'gastos'}`
+            : `la cuenta "${nombre}" con ${nGastos} ${nGastos === 1 ? 'gasto' : 'gastos'}`;
+
+        app.confirmAction(`Te compartieron ${detalle}. Se agrega a tus cuentas sin tocar lo que ya tienes.`,
+            () => app.importShared(payload), 'Importar');
+    },
+
+    importShared: (payload) => {
+        const catMap = app.reconcileCategories(payload.categories);
+        const esCarpeta = payload.k === 'folder';
+        let folderId = null;
+
+        if (esCarpeta) {
+            const folder = { id: utils.generateId(), name: app.uniqueFolderName(utils.clean(payload.name) || 'Compartido') };
+            store.folders.push(folder);
+            folderId = folder.id;
+        }
+
+        const cuentas = payload.accounts
+            .filter(a => a && typeof a.name === 'string' && a.name.trim())
+            .map(a => app.normalizeAccount(a, folderId, catMap));
+
+        store.accounts = cuentas.concat(store.accounts);
+        utils.save();
+        app.renderHome();
+        utils.showToast(`${cuentas.length} ${cuentas.length === 1 ? 'cuenta importada' : 'cuentas importadas'}`);
     },
 
     // --- EXPORTAR / IMPORTAR TODO ---
@@ -1599,7 +2048,8 @@ const app = {
             accounts: store.accounts,
             categories: store.categories,
             folders: store.folders,
-            colors: store.colors
+            themes: store.themes,
+            themeId: store.themeId
         };
         const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
@@ -1609,6 +2059,61 @@ const app = {
         URL.revokeObjectURL(url);
         utils.showToast('Datos exportados');
     },
+
+    // Las categorías que llegan se reconcilian por nombre; las que faltan se
+    // crean con id local, si no las cuentas caerían todas en "General".
+    reconcileCategories: (list) => {
+        const catMap = {};
+        (Array.isArray(list) ? list : []).forEach(c => {
+            if (!c || typeof c.name !== 'string') return;
+            const nombre = utils.clean(c.name, 40);
+            if (!nombre) return;
+            const local = store.categories.find(x => x.name === nombre);
+            if (local) {
+                catMap[c.id] = local.id;
+            } else {
+                const created = { id: Date.now() + Math.floor(Math.random() * 10000), name: nombre, emoji: utils.clean(c.emoji, 4) || '📦' };
+                store.categories.push(created);
+                catMap[c.id] = created.id;
+            }
+        });
+        return catMap;
+    },
+
+    // Ids nuevos (los de afuera pueden chocar con los de acá) y todo el texto
+    // saneado, venga de un archivo o de un enlace.
+    normalizeAccount: (a, folderId, catMap) => ({
+        id: utils.generateId(),
+        name: utils.clean(a.name, 60),
+        categoryId: catMap[a.categoryId] !== undefined ? catMap[a.categoryId] : store.categories[0].id,
+        date: a.date || new Date().toISOString(),
+        eventDate: a.eventDate || null,
+        folderId: folderId,
+        participants: (Array.isArray(a.participants) ? a.participants : [])
+            .filter(pt => pt && pt.name)
+            .map(pt => ({ id: utils.generateId(), name: utils.clean(pt.name, 40) })),
+        expenses: (Array.isArray(a.expenses) ? a.expenses : [])
+            .filter(e => e && Number(e.amount) > 0)
+            .map(e => ({
+                id: utils.generateId(),
+                desc: utils.clean(e.desc, 80),
+                amount: Number(e.amount),
+                payer: utils.clean(e.payer, 40),
+                date: e.date || new Date().toISOString(),
+                userDate: e.userDate || null,
+                type: e.type === 'individual' ? 'individual' : 'group',
+                ...(e.type === 'individual' ? { beneficiary: utils.clean(e.beneficiary, 40) } : {})
+            })),
+        payments: (Array.isArray(a.payments) ? a.payments : [])
+            .filter(pg => pg && Number(pg.amount) > 0)
+            .map(pg => ({
+                id: utils.generateId(),
+                from: utils.clean(pg.from, 40),
+                to: utils.clean(pg.to, 40),
+                amount: Number(pg.amount),
+                date: pg.date || new Date().toISOString()
+            }))
+    }),
 
     uniqueFolderName: (base) => {
         const taken = new Set(store.folders.map(f => f.name));
@@ -1637,35 +2142,9 @@ const app = {
         const incoming = data.accounts.filter(a => a && typeof a.name === 'string' && a.name.trim());
         if (incoming.length === 0) return utils.showToast('El archivo no trae cuentas');
 
-        // Las categorías del archivo se reconcilian por nombre; las que faltan se
-        // crean con id local, si no las cuentas caerían todas en "General".
-        const catMap = {};
-        (Array.isArray(data.categories) ? data.categories : []).forEach(c => {
-            if (!c || typeof c.name !== 'string') return;
-            const local = store.categories.find(x => x.name === c.name);
-            if (local) {
-                catMap[c.id] = local.id;
-            } else {
-                const created = { id: Date.now() + Math.floor(Math.random() * 10000), name: c.name, emoji: c.emoji || '📦' };
-                store.categories.push(created);
-                catMap[c.id] = created.id;
-            }
-        });
-
+        const catMap = app.reconcileCategories(data.categories);
         const folder = { id: utils.generateId(), name: app.uniqueFolderName(`Importado ${utils.formatDate(new Date().toISOString())}`) };
-
-        // Ids nuevos: los del archivo pueden chocar con los que ya existen.
-        const imported = incoming.map(a => ({
-            id: utils.generateId(),
-            name: a.name,
-            categoryId: catMap[a.categoryId] !== undefined ? catMap[a.categoryId] : store.categories[0].id,
-            date: a.date || new Date().toISOString(),
-            eventDate: a.eventDate || null,
-            folderId: folder.id,
-            participants: Array.isArray(a.participants) ? a.participants : [],
-            expenses: Array.isArray(a.expenses) ? a.expenses : [],
-            payments: Array.isArray(a.payments) ? a.payments : []
-        }));
+        const imported = incoming.map(a => app.normalizeAccount(a, folder.id, catMap));
 
         store.folders.push(folder);
         store.accounts = imported.concat(store.accounts);
@@ -1680,17 +2159,80 @@ const app = {
         store.categories.forEach((cat, index) => {
             const isDefault = index === 0;
             const el = document.createElement('div');
-            el.className = 'flex items-center justify-between p-3 bg-surface rounded-xl border border-gray-100 dark:border-gray-800';
-            el.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-xl">${cat.emoji}</div><span class="font-medium text-gray-700 dark:text-gray-200">${cat.name}</span></div>${!isDefault ? `<button onclick="app.deleteCategory(${index})" class="p-2 text-gray-400 hover:text-red-500 transition rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : '<span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Default</span>'}`;
+            el.className = 'flex items-center justify-between p-3 bg-surface rounded-xl border border-line';
+            const editing = store.editingCategoryIndex === index;
+            if (editing) el.className += ' ring-2 ring-primary border-primary';
+            el.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 shrink-0 rounded-full bg-content/5 flex items-center justify-center text-xl">${cat.emoji}</div>
+                    <span class="font-medium text-content truncate">${cat.name}</span>
+                </div>
+                <div class="flex items-center shrink-0">
+                    <button onclick="app.editCategory(${index})" aria-label="Editar ${cat.name}" class="w-10 h-10 flex items-center justify-center text-muted hover:text-primary transition rounded-full hover:bg-primary/10">
+                        <i data-lucide="pencil" class="w-5 h-5"></i>
+                    </button>
+                    ${isDefault
+                        ? '<span class="text-xs text-muted bg-content/10 px-2 py-1 rounded ml-1">Default</span>'
+                        : `<button onclick="app.deleteCategory(${index})" aria-label="Eliminar ${cat.name}" class="w-10 h-10 flex items-center justify-center text-muted hover:text-danger transition rounded-full hover:bg-danger/10">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>`}
+                </div>`;
             list.appendChild(el);
         });
         lucide.createIcons();
     },
-    addCategory: () => {
+    // El mismo formulario crea y edita: editingCategoryIndex decide cuál.
+    editCategory: (index) => {
+        const cat = store.categories[index];
+        if (!cat) return;
+        store.editingCategoryIndex = index;
+        document.getElementById('cat-name').value = cat.name;
+        document.getElementById('cat-emoji').value = cat.emoji;
+        app.syncCategoryForm();
+        app.renderCategories();
+        document.getElementById('cat-name').focus();
+    },
+
+    cancelEditCategory: () => {
+        store.editingCategoryIndex = null;
+        document.getElementById('cat-name').value = '';
+        document.getElementById('cat-emoji').value = '';
+        app.syncCategoryForm();
+        app.renderCategories();
+    },
+
+    syncCategoryForm: () => {
+        const editing = store.editingCategoryIndex !== null;
+        const save = document.getElementById('cat-save');
+        const cancel = document.getElementById('cat-cancel');
+        if (!save || !cancel) return;
+        cancel.classList.toggle('hidden', !editing);
+        cancel.classList.toggle('flex', editing);
+        save.setAttribute('aria-label', editing ? 'Guardar categoría' : 'Agregar categoría');
+        save.innerHTML = `<i data-lucide="${editing ? 'check' : 'plus'}" class="w-6 h-6"></i>`;
+        document.getElementById('cat-name').placeholder = editing ? 'Nombre de la categoría' : 'Nueva Categoría';
+        lucide.createIcons();
+    },
+
+    saveCategory: () => {
         const name = document.getElementById('cat-name').value.trim();
         const emoji = document.getElementById('cat-emoji').value.trim() || '📦';
-        if (!name) return;
+        if (!name) return utils.showToast('Ponle un nombre a la categoría');
+
+        if (store.editingCategoryIndex !== null) {
+            const cat = store.categories[store.editingCategoryIndex];
+            if (cat) {
+                cat.name = name;
+                cat.emoji = emoji;
+                utils.save();
+                utils.showToast('Categoría actualizada');
+            }
+            app.cancelEditCategory();
+            return;
+        }
+
         store.categories.push({ id: Date.now(), name, emoji });
+        store.categoryFilter = null;
         utils.save();
         app.renderCategories();
         document.getElementById('cat-name').value = ''; document.getElementById('cat-emoji').value = '';
@@ -1702,7 +2244,10 @@ const app = {
         app.confirmAction(inUse ? `"${cat.name}" se usa. Cuentas pasarán a "General".` : `¿Borrar "${cat.name}"?`, () => {
             if (inUse) store.accounts.forEach(a => { if(a.categoryId == cat.id) a.categoryId = store.categories[0].id; });
             store.categories.splice(index, 1);
+            store.categoryFilter = null;
+            store.editingCategoryIndex = null;
             utils.save();
+            app.syncCategoryForm();
             app.renderCategories();
             utils.showToast("Categoría eliminada");
         });

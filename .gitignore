@@ -4,32 +4,45 @@ dev-dist/
 .astro/
 build/
 .cache/
+.vite/
+*.tsbuildinfo
 
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Environment files
+# Environment files and credentials
 .env
 .env.production
 .env.development
 .env.local
 .env.*.local
+*.local
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Coverage and test output
+coverage/
+.nyc_output/
+
 # Editor directories and configurations
 .vscode/
 .idea/
+.fleet/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-project
+*.sublime-workspace
 
 # OS generated files
 .DS_Store
@@ -39,9 +52,15 @@ lerna-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+Thumbs.db:encryptable
 desktop.ini
+$RECYCLE.BIN/
 
-# Temporary files and backups
+# Temporary files, caches and backups
 *.tmp
 *.temp
+*.bak
+*.orig
+*.rej
 *~
+

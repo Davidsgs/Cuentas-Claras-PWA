@@ -19,6 +19,13 @@ export default {
         secondary: 'rgb(var(--c-secondary) / <alpha-value>)',
         base: 'rgb(var(--c-base) / <alpha-value>)',
         surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        content: 'rgb(var(--c-content) / <alpha-value>)',
+        muted: 'rgb(var(--c-muted) / <alpha-value>)',
+        line: 'rgb(var(--c-line) / <alpha-value>)',
+        // Derivados de la luminancia del acento, no los elige el usuario:
+        // texto blanco sobre un primario claro es ilegible.
+        'on-primary': 'rgb(var(--c-on-primary) / <alpha-value>)',
+        'on-secondary': 'rgb(var(--c-on-secondary) / <alpha-value>)',
         // Alias de los nombres viejos: dark era el fondo, cardDark la tarjeta.
         dark: 'rgb(var(--c-base) / <alpha-value>)',
         cardDark: 'rgb(var(--c-surface) / <alpha-value>)',

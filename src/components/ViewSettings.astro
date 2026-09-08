@@ -1,6 +1,6 @@
 <div id="view-settings" class="view hidden flex-col h-full flex w-full bg-base">
     <header class="bg-surface pt-safe-top px-4 pb-4 shadow-sm flex items-center gap-2 z-10 shrink-0">
-        <button onclick="app.navigate('home')" aria-label="Volver" class="w-11 h-11 shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <button onclick="app.navigate('home')" aria-label="Volver" class="w-11 h-11 shrink-0 flex items-center justify-center rounded-full hover:bg-content/10 transition">
             <i data-lucide="arrow-left" class="w-6 h-6"></i>
         </button>
         <h2 class="text-xl font-bold">Configuración</h2>
@@ -9,42 +9,60 @@
     <main class="flex-1 overflow-y-auto p-4 space-y-8 min-h-0">
         <section>
             <div class="flex justify-between items-center mb-1">
-                <h3 class="font-bold text-lg dark:text-gray-100">Colores</h3>
-                <button onclick="app.resetColors()" class="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+                <h3 class="font-bold text-lg text-content">Temas</h3>
+                <button onclick="app.resetThemes()" class="text-primary text-sm font-medium hover:underline flex items-center gap-1">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restaurar
                 </button>
             </div>
-            <p class="text-[10px] text-gray-400 italic mb-3 px-1">Los cambios del tema activo se ven al instante.</p>
-            <div id="settings-colors" class="space-y-6">
+            <p class="text-[10px] text-muted italic mb-3 px-1">Toca un tema para aplicarlo. "Restaurar" deja los 5 de fábrica y descarta el resto.</p>
+            <div id="settings-themes" class="grid grid-cols-2 gap-3">
                 <!-- Se llena con JS -->
             </div>
         </section>
 
+        <section>
+            <h3 class="font-bold text-lg text-content mb-1">Categorías</h3>
+            <p class="text-[10px] text-muted italic mb-3 px-1">Se usan para agrupar cuentas y para filtrar la pantalla principal.</p>
+            <div class="bg-surface/50 p-4 rounded-xl mb-4 border border-dashed border-line">
+                <div class="flex gap-2">
+                    <input type="text" id="cat-emoji" placeholder="📦" aria-label="Icono de la categoría" class="w-16 bg-surface rounded-xl px-3 text-center text-xl border-none focus:ring-2 focus:ring-primary outline-none" maxlength="2">
+                    <input type="text" id="cat-name" placeholder="Nueva Categoría" aria-label="Nombre de la categoría" class="flex-1 min-w-0 bg-surface rounded-xl px-4 py-3 border-none focus:ring-2 focus:ring-primary outline-none">
+                    <button id="cat-cancel" onclick="app.cancelEditCategory()" aria-label="Cancelar edición" class="hidden w-12 h-12 shrink-0 items-center justify-center rounded-xl bg-content/10 text-muted hover:text-content transition ios-btn">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                    <button id="cat-save" onclick="app.saveCategory()" aria-label="Agregar categoría" class="bg-secondary text-on-secondary w-12 h-12 shrink-0 flex items-center justify-center rounded-xl shadow-lg shadow-secondary/20 ios-btn">
+                        <i data-lucide="plus" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="categories-list" class="space-y-2"></div>
+        </section>
+
         <section class="pb-6">
-            <h3 class="font-bold text-lg dark:text-gray-100 mb-3">Datos</h3>
+            <h3 class="font-bold text-lg text-content mb-3">Datos</h3>
             <div class="space-y-3">
-                <button onclick="app.exportData()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-left">
-                    <div class="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full text-primary shrink-0">
+                <button onclick="app.exportData()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition text-left">
+                    <div class="bg-primary/15 p-3 rounded-full text-primary shrink-0">
                         <i data-lucide="download" class="w-6 h-6"></i>
                     </div>
                     <div class="min-w-0">
-                        <h4 class="font-bold text-gray-900 dark:text-white">Exportar todo</h4>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Cuentas, carpetas, categorías y colores en un JSON</p>
+                        <h4 class="font-bold text-content">Exportar todo</h4>
+                        <p class="text-xs text-muted">Cuentas, carpetas, categorías y temas en un JSON</p>
                     </div>
                 </button>
 
-                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-left">
-                    <div class="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full text-secondary shrink-0">
+                <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition text-left">
+                    <div class="bg-secondary/15 p-3 rounded-full text-secondary shrink-0">
                         <i data-lucide="upload" class="w-6 h-6"></i>
                     </div>
                     <div class="min-w-0">
-                        <h4 class="font-bold text-gray-900 dark:text-white">Importar desde JSON</h4>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Las cuentas del archivo entran agrupadas en una carpeta nueva</p>
+                        <h4 class="font-bold text-content">Importar desde JSON</h4>
+                        <p class="text-xs text-muted">Las cuentas del archivo entran agrupadas en una carpeta nueva</p>
                     </div>
                 </button>
             </div>
             <input type="file" id="import-file" accept="application/json,.json" class="hidden" onchange="app.importData(this)">
-            <p class="text-[10px] text-gray-400 italic mt-3 px-1">Importar no borra nada: lo que ya tienes se conserva tal cual.</p>
+            <p class="text-[10px] text-muted italic mt-3 px-1">Importar no borra nada: lo que ya tienes se conserva tal cual.</p>
         </section>
     </main>
 </div>

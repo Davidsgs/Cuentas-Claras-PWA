@@ -14,10 +14,12 @@
     "astro": "^5.6.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
-    "lucide": "^0.487.0"
+    "lucide": "^0.487.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@types/qrcode": "^1.5.6",
     "@vite-pwa/astro": "^0.5.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
