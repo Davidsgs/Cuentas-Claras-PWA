@@ -193,6 +193,11 @@ const utils = {
         return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
     },
     isDarkColor: (hex) => utils.luminance(hex) < 0.4,
+    // Corta una promesa que no termina. Rechaza al vencer el plazo.
+    withTimeout: (promesa, ms) => Promise.race([
+        promesa,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]),
     toBase64Url: (bytes) => {
         let bin = '';
         bytes.forEach(b => { bin += String.fromCharCode(b); });
@@ -1883,14 +1888,47 @@ const app = {
     // --- ACTUALIZACIONES ---
     version: () => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '?'),
 
+    swRegistration: null,
+
+    // El navegador solo busca un sw.js nuevo cuando hay una carga real de página
+    // dentro del scope. Una PWA instalada que se reanuda desde el launcher puede
+    // pasar días sin arrancar en frío y no enterarse nunca de que hay versión
+    // nueva. Por eso preguntamos nosotros: cada hora y cada vez que la app vuelve
+    // a primer plano.
+    onSWRegistered: (registration) => {
+        app.swRegistration = registration || null;
+        if (!registration) return;
+        const buscar = () => registration.update().catch(() => {});
+        setInterval(buscar, 60 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') buscar();
+        });
+        window.addEventListener('online', buscar);
+    },
+
+    // Un mensaje, al terminar. Si además hay un service worker esperando,
+    // onNeedRefresh muestra la barra por su cuenta.
+    checkForUpdates: async () => {
+        const actual = app.version();
+        const nueva = await app.fetchNewVersion();
+        if (app.swRegistration) {
+            try { await utils.withTimeout(app.swRegistration.update(), 8000); } catch (e) { /* sin red */ }
+        }
+        if (nueva === null) return utils.showToast('Sin conexión: no se pudo comprobar');
+        if (nueva !== actual) return utils.showToast(`Versión ${nueva} disponible. Recarga para aplicarla.`);
+        utils.showToast(`Ya tienes la última versión (${actual})`);
+    },
+
     // La versión que trae la actualización que espera. version.json no está en el
     // precache, así que esto lo responde la red: es la del build nuevo. El
     // parámetro extra evita además la caché HTTP.
     fetchNewVersion: async () => {
         try {
             const url = `${import.meta.env.BASE_URL}version.json?t=${Date.now()}`;
-            const res = await fetch(url, { cache: 'no-store' });
-            if (!res.ok) return null;
+            // En una red móvil mala un fetch puede quedar colgado sin fallar
+            // nunca; sin este corte el botón no respondería jamás.
+            const res = await utils.withTimeout(fetch(url, { cache: 'no-store' }), 8000);
+            if (!res || !res.ok) return null;
             const data = await res.json();
             return typeof data.version === 'string' ? data.version : null;
         } catch (e) { return null; }

@@ -42,6 +42,8 @@ La versión sale de `package.json` y se usa en tres lugares: se muestra al pie d
 
 **Antes de cada deploy hay que subir el número en `package.json`.** Es la única palanca; el resto se acomoda solo.
 
+El navegador solo busca un `sw.js` nuevo cuando hay una carga real de página dentro del scope. Una PWA instalada que se reanuda desde el launcher puede pasar días sin arrancar en frío, así que la app además consulta por su cuenta: cada hora, cada vez que vuelve a primer plano y cuando recupera conexión. En Configuración hay un botón "Buscar actualizaciones" para forzarlo.
+
 Las actualizaciones ya no se aplican de golpe: cuando hay una versión nueva esperando, la app muestra una barra con qué versión viene y el usuario elige cuándo recargar.
 
 # 🛠️ Tecnologías Usadas
