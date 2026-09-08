@@ -7,57 +7,55 @@ const base = import.meta.env.BASE_URL;
         <div class="flex justify-between items-center mb-4 pt-4 gap-2">
             <!-- raíz -->
             <div id="home-brand" class="flex items-center gap-3 min-w-0">
-                <img src={`${base}logo.svg`} alt="" width="36" height="36" class="w-9 h-9 shrink-0" />
+                <img src={`${base}logo.svg`} alt="" draggable="false" width="36" height="36" class="w-9 h-9 shrink-0" />
                 <div class="min-w-0">
-                    <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Cuentas Claras</h1>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Divide gastos en grupo.</p>
+                    <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Cuentas Claras</h1>
+                    <p class="text-xs text-muted">Divide gastos en grupo.</p>
                 </div>
             </div>
 
             <!-- dentro de una carpeta -->
             <div id="home-folder-head" class="hidden flex items-center gap-2 min-w-0">
-                <button onclick="app.exitFolder()" aria-label="Volver" class="w-11 h-11 -ml-3 shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <button onclick="app.exitFolder()" aria-label="Volver" class="w-11 h-11 -ml-3 shrink-0 flex items-center justify-center rounded-full hover:bg-content/10 transition">
                     <i data-lucide="arrow-left" class="w-6 h-6"></i>
                 </button>
                 <div class="min-w-0">
                     <h1 id="home-folder-name" class="text-xl font-bold leading-tight truncate">Carpeta</h1>
-                    <p id="home-folder-meta" class="text-xs text-gray-500 dark:text-gray-400">0 cuentas</p>
+                    <p id="home-folder-meta" class="text-xs text-muted">0 cuentas</p>
                 </div>
             </div>
 
             <!-- modo selección -->
             <div id="home-select-head" class="hidden flex items-center gap-2 min-w-0">
-                <button onclick="app.exitSelection()" aria-label="Cancelar selección" class="w-11 h-11 -ml-3 shrink-0 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <button onclick="app.exitSelection()" aria-label="Cancelar selección" class="w-11 h-11 -ml-3 shrink-0 flex items-center justify-center rounded-full hover:bg-content/10 transition">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
                 <h1 id="home-select-count" class="text-xl font-bold truncate">0 seleccionadas</h1>
             </div>
 
             <div class="flex items-center gap-1 shrink-0">
-                <button id="home-select-all" onclick="app.toggleSelectAll()" class="hidden px-3 py-2 rounded-full text-sm font-bold text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">Todas</button>
-                <button id="home-settings-btn" onclick="app.navigate('settings')" aria-label="Configuración" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                    <i data-lucide="settings" class="w-5 h-5"></i>
+                <button id="home-select-all" onclick="app.toggleSelectAll()" class="hidden px-3 py-2 rounded-full text-sm font-bold text-primary hover:bg-primary/10 transition">Todas</button>
+                <button id="home-folder-share" onclick="app.shareCurrentFolder()" aria-label="Compartir carpeta" class="hidden p-2 rounded-full hover:bg-content/10 transition">
+                    <i data-lucide="qr-code" class="w-5 h-5"></i>
                 </button>
-                <button id="home-theme-btn" onclick="app.toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                    <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
-                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                <button id="home-settings-btn" onclick="app.navigate('settings')" aria-label="Configuración" class="p-2 rounded-full hover:bg-content/10 transition">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
 
         <div id="home-filters" class="flex gap-2 mt-2 overflow-x-auto hide-scrollbar pb-1">
-            <button onclick="app.filterAccounts('all')" class="px-4 py-1.5 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap shadow-md shadow-primary/30">Todas</button>
-            <button onclick="app.navigate('categories')" class="px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap">Categorías</button>
+            <!-- Chips de filtro por categoría, se llenan con JS -->
         </div>
 
         <div id="home-select-actions" class="hidden flex gap-2 mt-2 overflow-x-auto hide-scrollbar pb-1">
-            <button onclick="app.groupSelection()" class="px-4 py-1.5 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap shadow-md shadow-primary/30 flex items-center gap-1.5">
+            <button onclick="app.groupSelection()" class="px-4 py-1.5 rounded-full bg-primary text-on-primary text-sm font-medium whitespace-nowrap shadow-md shadow-primary/30 flex items-center gap-1.5">
                 <i data-lucide="folder-plus" class="w-4 h-4"></i> Agrupar
             </button>
-            <button onclick="app.showMoveModal()" class="px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+            <button onclick="app.showMoveModal()" class="px-4 py-1.5 rounded-full bg-content/10 text-content text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
                 <i data-lucide="folder" class="w-4 h-4"></i> Mover a…
             </button>
-            <button onclick="app.deleteSelection()" class="px-4 py-1.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+            <button onclick="app.deleteSelection()" class="px-4 py-1.5 rounded-full bg-danger/10 text-danger text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
                 <i data-lucide="trash-2" class="w-4 h-4"></i> Borrar
             </button>
         </div>
@@ -68,7 +66,7 @@ const base = import.meta.env.BASE_URL;
     </main>
 
     <div id="home-fab" class="p-4 pointer-events-none absolute bottom-0 right-0 z-20 flex justify-end">
-        <button onclick="app.showAddAccountModal()" class="pointer-events-auto bg-primary text-white w-14 h-14 rounded-full shadow-xl shadow-primary/40 flex items-center justify-center ios-btn transition transform hover:scale-105">
+        <button onclick="app.showAddAccountModal()" class="pointer-events-auto bg-primary text-on-primary w-14 h-14 rounded-full shadow-xl shadow-primary/40 flex items-center justify-center ios-btn transition transform hover:scale-105">
             <i data-lucide="plus" class="w-8 h-8"></i>
         </button>
     </div>
