@@ -7,12 +7,20 @@
     --c-secondary: 16 185 129;
     --c-base: 249 250 251;
     --c-surface: 255 255 255;
+    --c-content: 17 24 39;
+    --c-muted: 107 114 128;
+    --c-line: 229 231 235;
+    --c-on-primary: 255 255 255;
+    --c-on-secondary: 255 255 255;
 }
 :root.dark {
     --c-primary: 79 70 229;
     --c-secondary: 16 185 129;
     --c-base: 17 24 39;
     --c-surface: 31 41 55;
+    --c-content: 243 244 246;
+    --c-muted: 156 163 175;
+    --c-line: 55 65 81;
 }
 
 @tailwind base;
@@ -66,4 +74,33 @@ input[type="color"]::-webkit-color-swatch {
 input[type="color"]::-moz-color-swatch {
     border: 1px solid rgb(0 0 0 / 0.15);
     border-radius: 10px;
+}
+
+/* La app se usa como app, no como documento: nada de seleccionar texto ni de
+   menú contextual al mantener presionado. En iOS ese menú además pelea con el
+   gesto de mantener presionado para entrar en modo selección de cuentas. */
+body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Donde sí: los campos de formulario (si no, no se puede editar) y lo que vale
+   la pena copiar, marcado con .selectable. */
+input,
+textarea,
+select,
+[contenteditable],
+.selectable,
+.selectable * {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
+/* Las imágenes no se arrastran ni se guardan con un long-press. */
+img {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    user-select: none;
 }
