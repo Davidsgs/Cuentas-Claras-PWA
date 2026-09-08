@@ -21,6 +21,7 @@ import Modals from '../components/Modals.astro';
     // el usuario elija el momento. updateSW(true) recarga.
     const updateSW = registerSW({
         immediate: true,
-        onNeedRefresh() { window.app.showUpdateBar(() => updateSW(true)); }
+        onNeedRefresh() { window.app.showUpdateBar(() => updateSW(true)); },
+        onRegisteredSW(_url, registration) { window.app.onSWRegistered(registration); }
     });
 </script>
