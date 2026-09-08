@@ -65,9 +65,9 @@ La ruta base `/Cuentas-Claras-PWA/` está en `astro.config.mjs`; si se renombra 
 
 # 🎨 Logo
 
-`public/logo.svg` es la fuente: un anillo partido en tres arcos desiguales (los gastos repartidos) con un check al centro (la cuenta saldada). Gradiente indigo `#4F46E5` → púrpura `#9333EA`, check en emerald `#10B981`, los mismos colores de la interfaz.
+* Descarga o clona el repositorio.
 
-Los PNG de `public/` (favicon táctil e iconos del manifest) se generaron a partir de ese SVG con `sharp`, que ya viene con Astro:
+* Abre el archivo index.html en cualquier navegador web moderno (Chrome, Safari, Edge).
 
 ```bash
 node -e "const sharp=require('sharp');sharp('public/logo.svg',{density:600}).resize(512,512).png().toFile('out.png')"
