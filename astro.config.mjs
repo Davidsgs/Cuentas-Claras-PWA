@@ -1,18 +1,24 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import AstroPWA from '@vite-pwa/astro';
+import pkg from './package.json' with { type: 'json' };
 
 // GitHub Pages de proyecto: https://davidsgs.github.io/Cuentas-Claras-PWA/
 const base = '/Cuentas-Claras-PWA/';
 
 export default defineConfig({
+  // La versión del bundle, para mostrarla en Configuración.
+  vite: { define: { __APP_VERSION__: JSON.stringify(pkg.version) } },
   site: 'https://davidsgs.github.io',
   base,
   integrations: [
     AstroPWA({
       base,
       scope: base,
-      registerType: 'autoUpdate',
+      // 'prompt' en vez de 'autoUpdate': con autoUpdate el service worker
+      // tomaba control y recargaba la página solo, sin avisar. Ahora la app
+      // detecta la versión nueva y deja que el usuario decida cuándo.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'logo.svg', 'apple-touch-icon.png'],
       manifest: {
         id: base,

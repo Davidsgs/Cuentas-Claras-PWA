@@ -1,3 +1,7 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+
 <div id="view-settings" class="view hidden flex-col h-full flex w-full bg-base">
     <header class="bg-surface pt-safe-top px-4 pb-4 shadow-sm flex items-center gap-2 z-10 shrink-0">
         <button onclick="app.navigate('home')" aria-label="Volver" class="w-11 h-11 shrink-0 flex items-center justify-center rounded-full hover:bg-content/10 transition">
@@ -63,6 +67,13 @@
             </div>
             <input type="file" id="import-file" accept="application/json,.json" class="hidden" onchange="app.importData(this)">
             <p class="text-[10px] text-muted italic mt-3 px-1">Importar no borra nada: lo que ya tienes se conserva tal cual.</p>
+        </section>
+
+        <section class="pb-8 pt-2 border-t border-line">
+            <div class="flex items-center justify-center gap-2 text-muted">
+                <img src={`${base}logo.svg`} alt="" draggable="false" width="20" height="20" class="w-5 h-5 opacity-60" />
+                <p class="text-xs">Cuentas Claras <span id="app-version" class="selectable tabular-nums">—</span></p>
+            </div>
         </section>
     </main>
 </div>
