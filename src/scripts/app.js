@@ -230,6 +230,7 @@ const app = {
         app.renderHome();
         lucide.createIcons();
         app.checkIncomingShare();
+        app.announceUpdate();
         // Si la app ya estaba abierta, abrir un enlace compartido solo cambia el
         // hash y no recarga el documento: sin esto el enlace no haría nada.
         window.addEventListener('hashchange', () => app.checkIncomingShare());
@@ -1700,6 +1701,8 @@ const app = {
     
     // --- CONFIGURACION: TEMAS ---
     renderSettings: () => {
+        const v = document.getElementById('app-version');
+        if (v) v.innerText = app.version();
         app.renderThemes();
         store.editingCategoryIndex = null;
         document.getElementById('cat-name').value = '';
@@ -1875,6 +1878,67 @@ const app = {
         const panel = document.getElementById('modal-theme-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
         setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    // --- ACTUALIZACIONES ---
+    version: () => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '?'),
+
+    // La versión que trae la actualización que espera. version.json no está en el
+    // precache, así que esto lo responde la red: es la del build nuevo. El
+    // parámetro extra evita además la caché HTTP.
+    fetchNewVersion: async () => {
+        try {
+            const url = `${import.meta.env.BASE_URL}version.json?t=${Date.now()}`;
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return typeof data.version === 'string' ? data.version : null;
+        } catch (e) { return null; }
+    },
+
+    showUpdateBar: async (apply) => {
+        const bar = document.getElementById('update-bar');
+        if (!bar) return;
+
+        const nueva = await app.fetchNewVersion();
+        const actual = app.version();
+        if (nueva && nueva !== actual) {
+            document.getElementById('update-title').innerText = `Versión ${nueva} disponible`;
+            // Los builds anteriores a esta versión no llevan número: ahí no tiene
+            // sentido decir "tienes la ?".
+            document.getElementById('update-sub').innerText = actual === '?'
+                ? 'Se aplica al recargar. Tus cuentas no se tocan.'
+                : `Tienes la ${actual}. Se aplica al recargar; tus cuentas no se tocan.`;
+        } else {
+            document.getElementById('update-title').innerText = 'Hay una versión nueva';
+            document.getElementById('update-sub').innerText = 'Se aplica al recargar. Tus cuentas no se tocan.';
+        }
+
+        document.getElementById('update-now').onclick = () => {
+            // La marca sobrevive a la recarga: sirve para confirmar del otro lado
+            // que lo que pasó fue una actualización y no un cierre raro.
+            try { localStorage.setItem('cc_updated', app.version()); } catch (e) {}
+            bar.classList.add('hidden');
+            apply();
+        };
+        bar.classList.remove('hidden');
+        lucide.createIcons();
+    },
+
+    dismissUpdate: () => {
+        const bar = document.getElementById('update-bar');
+        if (bar) bar.classList.add('hidden');
+    },
+
+    announceUpdate: () => {
+        try {
+            const anterior = localStorage.getItem('cc_updated');
+            if (!anterior) return;
+            localStorage.removeItem('cc_updated');
+            const ahora = app.version();
+            const texto = anterior !== ahora ? `Actualizada a la versión ${ahora}` : 'App actualizada';
+            setTimeout(() => utils.showToast(texto), 500);
+        } catch (e) {}
     },
 
     // --- COMPARTIR ---

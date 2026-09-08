@@ -17,6 +17,10 @@ import Modals from '../components/Modals.astro';
     import { registerSW } from 'virtual:pwa-register';
     import '../scripts/app.js';
 
-    // autoUpdate: si hay una versión nueva desplegada, se instala y recarga sola.
-    registerSW({ immediate: true });
+    // La versión nueva queda esperando; onNeedRefresh avisa y la barra deja que
+    // el usuario elija el momento. updateSW(true) recarga.
+    const updateSW = registerSW({
+        immediate: true,
+        onNeedRefresh() { window.app.showUpdateBar(() => updateSW(true)); }
+    });
 </script>
