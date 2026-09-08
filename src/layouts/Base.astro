@@ -1,0 +1,43 @@
+---
+import '../styles/global.css';
+
+const base = import.meta.env.BASE_URL;
+---
+
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Cuentas Claras</title>
+    <meta name="description" content="Divide gastos en grupo: quién le debe a quién, calculado solo." />
+
+    <link rel="manifest" href={`${base}manifest.webmanifest`} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="apple-touch-icon" href={`${base}apple-touch-icon.png`} />
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Aplica el tema antes del primer pintado, si no la app parpadea en blanco. -->
+    <script is:inline>
+        try {
+            var t = localStorage.getItem('cc_theme') === 'light' ? 'light' : 'dark';
+            if (t === 'light') document.documentElement.classList.remove('dark');
+            var c = JSON.parse(localStorage.getItem('cc_colors') || 'null');
+            if (c && c[t]) {
+                for (var k in c[t]) {
+                    var m = /^#([0-9a-f]{6})$/i.exec(String(c[t][k]));
+                    if (!m) continue;
+                    var n = parseInt(m[1], 16);
+                    document.documentElement.style.setProperty(
+                        '--c-' + k, ((n >> 16) & 255) + ' ' + ((n >> 8) & 255) + ' ' + (n & 255));
+                }
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body class="bg-base text-gray-900 dark:text-gray-100 transition-colors duration-200 flex flex-col overflow-hidden">
+    <slot />
+</body>
+</html>

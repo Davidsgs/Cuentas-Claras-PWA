@@ -1,0 +1,69 @@
+@import '@fontsource-variable/outfit';
+
+/* Paleta editable. Estos son los valores de fábrica; Configuración los pisa
+   con un style inline en <html>. En canales sueltos para las opacidades. */
+:root {
+    --c-primary: 79 70 229;
+    --c-secondary: 16 185 129;
+    --c-base: 249 250 251;
+    --c-surface: 255 255 255;
+}
+:root.dark {
+    --c-primary: 79 70 229;
+    --c-secondary: 16 185 129;
+    --c-base: 17 24 39;
+    --c-surface: 31 41 55;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fix definitivo para altura en móviles */
+body {
+    position: fixed;
+    inset: 0;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.ios-btn:active {
+    transform: scale(0.96);
+}
+/* La clase ya estaba en el header pero nunca existió: en modo standalone
+   (PWA instalada) sin esto el título queda debajo del notch. */
+.pt-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+/* Carpeta resaltada mientras se arrastra una selección encima. Va en CSS y no
+   con clases de Tailwind porque compite con el bg y el ring de la tarjeta. */
+.drop-target {
+    outline: 2px solid #4F46E5;
+    outline-offset: 2px;
+    background-color: rgb(79 70 229 / 0.10);
+}
+
+/* El swatch nativo del color picker es feo y distinto en cada navegador. */
+input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+    border: 1px solid rgb(0 0 0 / 0.15);
+    border-radius: 10px;
+}
+input[type="color"]::-moz-color-swatch {
+    border: 1px solid rgb(0 0 0 / 0.15);
+    border-radius: 10px;
+}

@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import ViewHome from '../components/ViewHome.astro';
+import ViewAccount from '../components/ViewAccount.astro';
+import ViewCategories from '../components/ViewCategories.astro';
+import ViewSettings from '../components/ViewSettings.astro';
+import Modals from '../components/Modals.astro';
+---
+
+<Base>
+    <ViewHome />
+    <ViewAccount />
+    <ViewCategories />
+    <ViewSettings />
+    <Modals />
+</Base>
+
+<script>
+    import { registerSW } from 'virtual:pwa-register';
+    import '../scripts/app.js';
+
+    // autoUpdate: si hay una versión nueva desplegada, se instala y recarga sola.
+    registerSW({ immediate: true });
+</script>
