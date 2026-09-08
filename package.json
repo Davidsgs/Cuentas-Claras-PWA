@@ -1,0 +1,27 @@
+{
+  "name": "cuentas-claras-pwa",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@fontsource-variable/outfit": "^5.1.1",
+    "astro": "^5.6.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "lucide": "^0.487.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@vite-pwa/astro": "^0.5.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.9.3"
+  }
+}
