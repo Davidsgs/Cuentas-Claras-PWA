@@ -1,57 +1,67 @@
 <!-- Export Modal -->
 <div id="modal-export" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-export-panel">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden"></div>
-        <h2 class="text-xl font-bold mb-4 dark:text-white">Exportar Detalle</h2>
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <h2 class="text-xl font-bold mb-4 text-content">Exportar Detalle</h2>
         <div class="space-y-3">
-            <button onclick="app.exportText()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
-                <div class="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full text-primary">
+            <button id="export-share-btn" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition group">
+                <div class="bg-primary/15 p-3 rounded-full text-primary">
+                    <i data-lucide="qr-code" class="w-6 h-6"></i>
+                </div>
+                <div class="text-left min-w-0">
+                    <h4 class="font-bold text-content">Compartir con alguien</h4>
+                    <p class="text-xs text-muted">QR o enlace para que la copie en su app</p>
+                </div>
+            </button>
+
+            <button onclick="app.exportText()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition group">
+                <div class="bg-primary/15 p-3 rounded-full text-primary">
                     <i data-lucide="file-text" class="w-6 h-6"></i>
                 </div>
                 <div class="text-left">
-                    <h4 class="font-bold text-gray-900 dark:text-white">Como Texto</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Copiar al portapapeles o WhatsApp</p>
+                    <h4 class="font-bold text-content">Como Texto</h4>
+                    <p class="text-xs text-muted">Copiar al portapapeles o WhatsApp</p>
                 </div>
             </button>
             
-            <button onclick="app.exportImage()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
-                <div class="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full text-secondary">
+            <button onclick="app.exportImage()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition group">
+                <div class="bg-secondary/15 p-3 rounded-full text-secondary">
                     <i data-lucide="image" class="w-6 h-6"></i>
                 </div>
                 <div class="text-left">
-                    <h4 class="font-bold text-gray-900 dark:text-white">Como Imagen</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Descargar resumen visual (PNG)</p>
+                    <h4 class="font-bold text-content">Como Imagen</h4>
+                    <p class="text-xs text-muted">Descargar resumen visual (PNG)</p>
                 </div>
             </button>
             
-            <button onclick="app.exportPDF()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group">
-                <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full text-red-500">
+            <button onclick="app.exportPDF()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition group">
+                <div class="bg-danger/15 p-3 rounded-full text-danger">
                     <i data-lucide="file" class="w-6 h-6"></i>
                 </div>
                 <div class="text-left">
-                    <h4 class="font-bold text-gray-900 dark:text-white">Como PDF</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Documento estilo hoja A4</p>
+                    <h4 class="font-bold text-content">Como PDF</h4>
+                    <p class="text-xs text-muted">Documento estilo hoja A4</p>
                 </div>
             </button>
         </div>
-        <button onclick="app.closeExportModal()" class="w-full mt-6 text-gray-500 py-3 font-medium">Cancelar</button>
+        <button onclick="app.closeExportModal()" class="w-full mt-6 text-muted py-3 font-medium">Cancelar</button>
     </div>
 </div>
 
 <!-- Add Account -->
 <div id="modal-add-account" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-add-account-panel">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
         <h2 id="add-account-title" class="text-xl font-bold mb-4">Nueva Cuenta</h2>
         <div class="space-y-4">
-            <input type="text" id="new-account-name" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Nombre (ej. Playa)">
-            <select id="new-account-cat" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none"></select>
+            <input type="text" id="new-account-name" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Nombre (ej. Playa)">
+            <select id="new-account-cat" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none"></select>
             <div>
-                <label class="text-xs text-gray-500 font-medium ml-1">Fecha del Evento (Opcional)</label>
-                <input type="date" id="new-account-date" class="w-full mt-1 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                <label class="text-xs text-muted font-medium ml-1">Fecha del Evento (Opcional)</label>
+                <input type="date" id="new-account-date" class="w-full mt-1 bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content">
             </div>
-            <button id="add-account-submit" onclick="app.saveAccount()" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-lg mt-2">Crear</button>
-            <button onclick="app.closeAddAccountModal()" class="w-full text-gray-500 py-3 font-medium">Cancelar</button>
+            <button id="add-account-submit" onclick="app.saveAccount()" class="w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold shadow-lg mt-2">Crear</button>
+            <button onclick="app.closeAddAccountModal()" class="w-full text-muted py-3 font-medium">Cancelar</button>
         </div>
     </div>
 </div>
@@ -59,11 +69,11 @@
 <!-- Add Participant -->
 <div id="modal-add-participant" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full max-w-sm rounded-2xl p-6 transform scale-95 transition-transform duration-200" id="modal-add-participant-panel">
-        <h3 class="text-lg font-bold mb-4 dark:text-white">Nuevo Participante</h3>
-        <input type="text" id="part-name" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 dark:text-white" placeholder="Nombre (ej. Juan)">
+        <h3 class="text-lg font-bold mb-4 text-content">Nuevo Participante</h3>
+        <input type="text" id="part-name" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content" placeholder="Nombre (ej. Juan)">
         <div class="flex gap-3">
-            <button onclick="app.closeAddParticipantModal()" class="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancelar</button>
-            <button onclick="app.addParticipant()" class="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition">Añadir</button>
+            <button onclick="app.closeAddParticipantModal()" class="flex-1 py-3 text-muted font-medium hover:bg-content/10 rounded-xl transition">Cancelar</button>
+            <button onclick="app.addParticipant()" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:bg-primary/90 transition">Añadir</button>
         </div>
     </div>
 </div>
@@ -71,36 +81,36 @@
 <!-- Add Expense -->
 <div id="modal-add-expense" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-add-expense-panel">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
         <h2 id="add-expense-title" class="text-xl font-bold mb-4">Nuevo Gasto</h2>
         <div class="space-y-4">
-            <input type="text" id="exp-desc" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Descripción (ej. Cervezas)">
-            <input type="number" id="exp-amount" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-lg font-bold" placeholder="$0.00">
+            <input type="text" id="exp-desc" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Descripción (ej. Cervezas)">
+            <input type="number" id="exp-amount" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-lg font-bold" placeholder="$0.00">
             <div>
-                <label class="text-xs text-gray-500 font-medium ml-1">¿Quién pagó?</label>
-                <select id="exp-payer" class="w-full mt-1 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none"></select>
+                <label class="text-xs text-muted font-medium ml-1">¿Quién pagó?</label>
+                <select id="exp-payer" class="w-full mt-1 bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none"></select>
             </div>
             <div>
-                <label class="text-xs text-gray-500 font-medium ml-1">Fecha del Gasto (Opcional)</label>
-                <input type="date" id="exp-date" class="w-full mt-1 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary dark:text-white">
+                <label class="text-xs text-muted font-medium ml-1">Fecha del Gasto (Opcional)</label>
+                <input type="date" id="exp-date" class="w-full mt-1 bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content">
             </div>
             
             <!-- TIPO DE GASTO -->
             <div class="pt-2">
-                <div class="flex items-center gap-2 mb-2 cursor-pointer bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700" onclick="document.getElementById('exp-is-personal').click()">
-                    <input type="checkbox" id="exp-is-personal" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 pointer-events-none" onchange="app.toggleExpenseType()">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer flex-1">¿Es un gasto personal?</label>
+                <div class="flex items-center gap-2 mb-2 cursor-pointer bg-content/5 p-2 rounded-lg border border-line" onclick="document.getElementById('exp-is-personal').click()">
+                    <input type="checkbox" id="exp-is-personal" class="w-5 h-5 rounded text-primary focus:ring-primary border-line pointer-events-none" onchange="app.toggleExpenseType()">
+                    <label class="text-sm font-medium text-content select-none cursor-pointer flex-1">¿Es un gasto personal?</label>
                 </div>
                 
                 <div id="exp-beneficiary-wrapper" class="hidden animate-fade-in pl-2 border-l-2 border-primary ml-1">
-                    <label class="text-xs text-gray-500 font-medium ml-1">¿Para quién es (Beneficiario)?</label>
-                    <select id="exp-beneficiary" class="w-full mt-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none text-primary font-bold"></select>
-                    <p class="text-[10px] text-gray-400 mt-1 ml-1">Este monto se cobrará 100% a esta persona.</p>
+                    <label class="text-xs text-muted font-medium ml-1">¿Para quién es (Beneficiario)?</label>
+                    <select id="exp-beneficiary" class="w-full mt-1 bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary appearance-none text-primary font-bold"></select>
+                    <p class="text-[10px] text-muted mt-1 ml-1">Este monto se cobrará 100% a esta persona.</p>
                 </div>
             </div>
 
-            <button id="add-expense-submit" onclick="app.saveExpense()" class="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-lg mt-2">Guardar Gasto</button>
-            <button onclick="app.closeAddExpenseModal()" class="w-full text-gray-500 py-3 font-medium">Cancelar</button>
+            <button id="add-expense-submit" onclick="app.saveExpense()" class="w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold shadow-lg mt-2">Guardar Gasto</button>
+            <button onclick="app.closeAddExpenseModal()" class="w-full text-muted py-3 font-medium">Cancelar</button>
         </div>
     </div>
 </div>
@@ -108,66 +118,115 @@
 <!-- Modal Balances (Resultados) -->
 <div id="modal-balances" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto flex flex-col" id="modal-balances-panel">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden shrink-0"></div>
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden shrink-0"></div>
         
         <div class="flex justify-between items-start mb-6 shrink-0">
             <div>
-                <h2 class="text-xl font-bold dark:text-white">División de Gastos</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Quién le paga a quién</p>
+                <h2 class="text-xl font-bold text-content">División de Gastos</h2>
+                <p class="text-sm text-muted">Quién le paga a quién</p>
             </div>
-            <button onclick="app.closeBalancesModal()" class="p-2 -mr-2 text-gray-400 hover:text-gray-600">
+            <button onclick="app.closeBalancesModal()" class="p-2 -mr-2 text-muted hover:text-muted">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
 
-        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 mb-6 shrink-0 text-center border border-indigo-100 dark:border-indigo-800/50">
+        <div class="bg-primary/10 rounded-xl p-4 mb-6 shrink-0 text-center border border-primary/30">
             <p class="text-xs font-bold text-primary uppercase tracking-wider mb-1">Cuota Grupal (Promedio)</p>
-            <h3 id="bal-share" class="text-3xl font-bold text-gray-900 dark:text-white">$0</h3>
-            <p class="text-[10px] text-gray-400 mt-1 italic">Más gastos particulares individuales</p>
+            <h3 id="bal-share" class="selectable text-3xl font-bold text-content">$0</h3>
+            <p class="text-[10px] text-muted mt-1 italic">Más gastos particulares individuales</p>
         </div>
 
-        <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-3 shrink-0">Deudas Pendientes</h3>
-        <div id="bal-list" class="space-y-3 overflow-y-auto pb-4"></div>
+        <h3 class="font-bold text-content mb-3 shrink-0">Deudas Pendientes</h3>
+        <div id="bal-list" class="selectable space-y-3 overflow-y-auto pb-4"></div>
     </div>
 </div>
 
 <!-- Mover cuentas a una carpeta -->
 <div id="modal-move" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-move-panel">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden"></div>
-        <h2 id="move-title" class="text-xl font-bold mb-4 dark:text-white">Mover a…</h2>
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <h2 id="move-title" class="text-xl font-bold mb-4 text-content">Mover a…</h2>
         <div id="move-list" class="space-y-3 max-h-[50vh] overflow-y-auto"></div>
-        <button onclick="app.closeMoveModal()" class="w-full mt-6 text-gray-500 py-3 font-medium">Cancelar</button>
+        <button onclick="app.closeMoveModal()" class="w-full mt-6 text-muted py-3 font-medium">Cancelar</button>
     </div>
 </div>
 
 <!-- Pedir un texto (renombrar carpeta, nombrar una carpeta nueva) -->
 <div id="modal-prompt" class="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
     <div class="bg-surface w-full max-w-sm rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-200" id="modal-prompt-panel">
-        <h3 id="prompt-title" class="text-lg font-bold mb-4 dark:text-white">Nombre</h3>
-        <input type="text" id="prompt-input" class="w-full bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 dark:text-white" placeholder="Nombre">
+        <h3 id="prompt-title" class="text-lg font-bold mb-4 text-content">Nombre</h3>
+        <input type="text" id="prompt-input" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content" placeholder="Nombre">
         <div class="flex gap-3">
-            <button onclick="app.closePrompt()" class="flex-1 py-3 text-gray-500 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancelar</button>
-            <button id="prompt-ok" class="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition">Guardar</button>
+            <button onclick="app.closePrompt()" class="flex-1 py-3 text-muted font-medium hover:bg-content/10 rounded-xl transition">Cancelar</button>
+            <button id="prompt-ok" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:bg-primary/90 transition">Guardar</button>
         </div>
     </div>
 </div>
 
+<!-- Editor de tema: sirve para crear y para editar -->
+<div id="modal-theme" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="modal-theme-panel">
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <h2 id="theme-modal-title" class="text-xl font-bold mb-4 text-content">Nuevo Tema</h2>
+        <input type="text" id="theme-name" placeholder="Nombre del tema" aria-label="Nombre del tema" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content">
+        <div id="theme-colors" class="space-y-2"></div>
+        <button id="theme-save" class="w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold shadow-lg mt-4">Guardar</button>
+        <button onclick="app.closeThemeModal()" class="w-full text-muted py-3 font-medium">Cancelar</button>
+    </div>
+</div>
+
+<!-- Compartir cuenta o carpeta -->
+<div id="modal-share" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="modal-share-panel">
+        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <h2 id="share-title" class="text-xl font-bold text-content">Compartir</h2>
+        <p id="share-sub" class="text-sm text-muted mb-4">&nbsp;</p>
+
+        <!-- El QR va siempre en negro sobre blanco: con los colores del tema
+             un tema oscuro lo invierte y deja de escanearse. -->
+        <div id="share-qr-wrap" class="bg-white rounded-2xl p-4 mb-3 mx-auto max-w-[19rem]">
+            <div id="share-qr" class="w-full aspect-square"></div>
+        </div>
+        <p id="share-qr-hint" class="text-xs text-muted text-center mb-4">Apunta la cámara del otro teléfono. No hace falta escanear desde la app.</p>
+        <div id="share-too-big" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
+            <p class="text-xs text-amber-500">Son demasiados datos para un QR. Usa el enlace o el archivo.</p>
+        </div>
+
+        <div class="space-y-3">
+            <button onclick="app.shareLink()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition text-left">
+                <div class="bg-primary/15 p-3 rounded-full text-primary shrink-0"><i data-lucide="link" class="w-6 h-6"></i></div>
+                <div class="min-w-0">
+                    <h4 class="font-bold text-content">Compartir enlace</h4>
+                    <p class="text-xs text-muted">Por WhatsApp, mail o lo que uses</p>
+                </div>
+            </button>
+            <button onclick="app.shareFile()" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition text-left">
+                <div class="bg-secondary/15 p-3 rounded-full text-secondary shrink-0"><i data-lucide="file-text" class="w-6 h-6"></i></div>
+                <div class="min-w-0">
+                    <h4 class="font-bold text-content">Compartir archivo</h4>
+                    <p class="text-xs text-muted">Un JSON que se importa desde Configuración</p>
+                </div>
+            </button>
+        </div>
+        <button onclick="app.closeShareModal()" class="w-full mt-6 text-muted py-3 font-medium">Cerrar</button>
+    </div>
+</div>
+
 <!-- Toast & Confirm -->
-<div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white px-6 py-3 rounded-full shadow-xl z-[60] text-sm font-medium opacity-0 pointer-events-none transition duration-300 flex items-center gap-2">
+<div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-content text-base px-6 py-3 rounded-full shadow-xl z-[60] text-sm font-medium opacity-0 pointer-events-none transition duration-300 flex items-center gap-2">
     <i data-lucide="info" class="w-4 h-4 text-secondary"></i>
     <span id="toast-msg">Mensaje</span>
 </div>
 
 <div id="modal-confirm" class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
     <div class="bg-surface rounded-2xl shadow-2xl max-w-sm w-full p-6 transform scale-95 transition-transform duration-200" id="modal-panel">
-        <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 text-red-500">
+        <div class="w-12 h-12 rounded-full bg-danger/15 flex items-center justify-center mb-4 text-danger">
             <i data-lucide="alert-triangle" class="w-6 h-6"></i>
         </div>
-        <h3 class="text-lg font-bold mb-2 dark:text-white">¿Estás seguro?</h3>
-        <p id="modal-msg" class="text-gray-500 dark:text-gray-400 mb-6 text-sm leading-relaxed">Esta acción no se puede deshacer.</p>
+        <h3 class="text-lg font-bold mb-2 text-content">¿Estás seguro?</h3>
+        <p id="modal-msg" class="text-muted mb-6 text-sm leading-relaxed">Esta acción no se puede deshacer.</p>
         <div class="flex gap-3">
-            <button onclick="app.closeConfirm()" class="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 font-medium hover:bg-gray-200 transition">Cancelar</button>
+            <button onclick="app.closeConfirm()" class="flex-1 py-3 rounded-xl bg-content/10 text-content font-medium hover:bg-content/20 transition">Cancelar</button>
             <button id="modal-btn-yes" class="flex-1 py-3 rounded-xl bg-danger text-white font-bold shadow-lg hover:bg-red-600 transition">Eliminar</button>
         </div>
     </div>
