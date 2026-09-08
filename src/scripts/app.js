@@ -1028,7 +1028,7 @@ const app = {
                     <img src="${import.meta.env.BASE_URL}logo.svg" alt="" width="96" height="96" class="w-24 h-24 mb-6">
                     <h2 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 pb-1">Cuentas Claras</h2>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-8">Aún no tienes cuentas. Crea la primera para empezar a dividir gastos.</p>
-                    <button onclick="app.showAddAccountModal()" class="bg-primary text-white px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/30 ios-btn flex items-center gap-2">
+                    <button onclick="app.showAddAccountModal()" class="bg-primary text-white px-6 py-3.5 rounded-xl font-bold shadow-lg shadow-primary/30 ios-btn flex items-center gap-2">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                         Nueva cuenta
                     </button>
