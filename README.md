@@ -36,6 +36,14 @@ Cuentas Claras es una aplicación web progresiva (PWA) diseñada para simplifica
 
 * Funciona sin conexión: service worker con precache; se actualiza sola cuando hay un despliegue nuevo.
 
+# 🔢 Versionado
+
+La versión sale de `package.json` y se usa en tres lugares: se muestra al pie de Configuración, viaja en `/version.json` (fuera del precache, siempre por red) y aparece en el aviso de actualización.
+
+**Antes de cada deploy hay que subir el número en `package.json`.** Es la única palanca; el resto se acomoda solo.
+
+Las actualizaciones ya no se aplican de golpe: cuando hay una versión nueva esperando, la app muestra una barra con qué versión viene y el usuario elige cuándo recargar.
+
 # 🛠️ Tecnologías Usadas
 
 * Astro: build estático, sin servidor. Toda la lógica sigue siendo JavaScript vanilla del lado del cliente.
