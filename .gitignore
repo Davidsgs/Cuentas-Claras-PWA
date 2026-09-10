@@ -36,6 +36,7 @@ coverage/
 .vscode/
 .idea/
 .fleet/
+.markdown-collab/
 *.suo
 *.ntvs*
 *.njsproj
