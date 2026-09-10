@@ -1453,7 +1453,7 @@ const app = {
                 // El color de frecuentes distingue de un vistazo a la gente de
                 // la libreta; se decide por nombre, así también aplica a
                 // participantes cargados antes de existir la libreta.
-                const frecuente = app.isFrequent(p.name);
+                const frecuente = app.isFrequent(p);
                 const el = document.createElement('div');
                 el.className = 'flex flex-col items-center gap-1 min-w-[60px] cursor-pointer group relative';
                 el.onclick = () => app.showAddParticipantModal(p.id);
@@ -2191,7 +2191,13 @@ const app = {
 
     buildSharePayload: (kind, id) => {
         // folderId no viaja: los ids de carpeta del que recibe son otros.
-        const strip = (a) => { const { folderId, ...resto } = a; return resto; };
+        const strip = (a) => {
+            const { folderId, ...resto } = a;
+            // contactId apunta a la libreta de quien comparte: no le sirve al otro
+            // y solo agranda el QR.
+            resto.participants = (resto.participants || []).map(({ contactId, ...pt }) => pt);
+            return resto;
+        };
         if (kind === 'folder') {
             const folder = store.folders.find(f => f.id === id);
             if (!folder) return null;
@@ -2395,7 +2401,14 @@ const app = {
         folderId: folderId,
         participants: (Array.isArray(a.participants) ? a.participants : [])
             .filter(pt => pt && pt.name)
-            .map(pt => ({ id: utils.generateId(), name: utils.clean(pt.name, 40) })),
+            // Banco y CBU viajan: sirven justo para que el otro te transfiera.
+            // contactId no: la libreta del que recibe es otra.
+            .map(pt => ({
+                id: utils.generateId(),
+                name: utils.clean(pt.name, 40),
+                bank: utils.clean(pt.bank, 60),
+                cbu: utils.clean(pt.cbu, 60)
+            })),
         expenses: (Array.isArray(a.expenses) ? a.expenses : [])
             .filter(e => e && Number(e.amount) > 0)
             .map(e => ({
@@ -2558,20 +2571,22 @@ const app = {
     },
     // --- PARTICIPANTS ---
     // ---- Libreta de frecuentes (global, se gestiona en Configuración) ----
-    // Se compara por nombre normalizado: si "Ana" está en la libreta, toda "Ana"
-    // de cualquier cuenta se pinta como frecuente. Es lo que hace que el color
-    // signifique algo sin tener que re-vincular participantes viejos.
+    // El vínculo es explícito, por id: se crea al elegir a alguien de la libreta
+    // o al marcar "Guardar en frecuentes". Comparar por nombre haría que un
+    // "David" escrito a mano en otra cuenta se tomara por el David de la
+    // libreta, que es justo lo que no se quiere.
     normName: (name) => String(name || '').trim().toLowerCase(),
 
-    isFrequent: (name) => {
-        const n = app.normName(name);
-        return !!n && store.contacts.some(c => app.normName(c.name) === n);
+    // Recibe el participante, no su nombre.
+    isFrequent: (participant) => {
+        const id = participant && participant.contactId;
+        return !!id && store.contacts.some(c => c.id === id);
     },
 
-    findContact: (name) => {
-        const n = app.normName(name);
-        return store.contacts.find(c => app.normName(c.name) === n) || null;
-    },
+    // Nombre ya usado por otro participante de la cuenta. Los gastos guardan el
+    // nombre de quien pagó, así que dentro de una misma cuenta no puede repetirse.
+    nameTaken: (acc, name, exceptId) => (acc.participants || [])
+        .some(p => app.normName(p.name) === app.normName(name) && p.id !== exceptId),
 
     // ---- Modal de participante ----
     showAddParticipantModal: (participantId) => {
@@ -2591,7 +2606,7 @@ const app = {
         document.getElementById('part-bank').value = (editando && editando.bank) || '';
         document.getElementById('part-cbu').value = (editando && editando.cbu) || '';
         document.getElementById('part-save').innerText = editando ? 'Guardar' : 'Añadir';
-        document.getElementById('part-save-contact').checked = editando ? app.isFrequent(editando.name) : false;
+        document.getElementById('part-save-contact').checked = editando ? app.isFrequent(editando) : false;
         document.getElementById('part-save-contact-row').classList.remove('hidden');
 
         const borrar = document.getElementById('part-delete');
@@ -2692,9 +2707,9 @@ const app = {
             ? acc.participants.find(p => p.id === store.editingParticipantId)
             : null;
 
-        const repetido = acc.participants.some(p => app.normName(p.name) === app.normName(name)
-                                                && (!editando || p.id !== editando.id));
-        if (repetido) return utils.showToast('Ya hay alguien con ese nombre en la cuenta');
+        if (app.nameTaken(acc, name, editando && editando.id)) {
+            return utils.showToast('Ya hay alguien con ese nombre en la cuenta');
+        }
 
         if (editando) {
             const anterior = editando.name;
@@ -2708,7 +2723,22 @@ const app = {
             acc.participants.push({ id: utils.generateId(), name, bank, cbu });
         }
 
-        if (document.getElementById('part-save-contact').checked) app.rememberContact(name, bank, cbu);
+        // La casilla es el vínculo: marcada crea o actualiza el frecuente y lo
+        // ata a este participante; desmarcada solo suelta el vínculo, el
+        // frecuente sigue existiendo en la libreta.
+        const persona = editando || acc.participants[acc.participants.length - 1];
+        const quiereFrecuente = document.getElementById('part-save-contact').checked;
+        const vinculado = persona.contactId && store.contacts.find(c => c.id === persona.contactId);
+
+        if (quiereFrecuente && vinculado) {
+            vinculado.name = name; vinculado.bank = bank; vinculado.cbu = cbu;
+        } else if (quiereFrecuente) {
+            const nuevo = { id: utils.generateId(), name, bank, cbu };
+            store.contacts.push(nuevo);
+            persona.contactId = nuevo.id;
+        } else if (persona.contactId) {
+            delete persona.contactId;
+        }
 
         utils.save();
         app.renderAccount();
@@ -2728,16 +2758,6 @@ const app = {
         });
     },
 
-    rememberContact: (name, bank, cbu) => {
-        const existente = app.findContact(name);
-        if (existente) {
-            existente.name = name;
-            existente.bank = bank;
-            existente.cbu = cbu;
-        } else {
-            store.contacts.push({ id: utils.generateId(), name, bank, cbu });
-        }
-    },
 
     deleteParticipant: () => {
         // Desde la libreta: borra el frecuente, no toca las cuentas.
@@ -2796,7 +2816,8 @@ const app = {
         const cont = document.getElementById('contacts-picker');
         if (!cont) return;
         const acc = store.accounts.find(a => a.id === store.currentAccountId);
-        const yaEstan = new Set((acc && acc.participants || []).map(p => app.normName(p.name)));
+        // "ya está" es por vínculo, no por nombre: un tocayo suelto no cuenta.
+        const vinculados = new Set((acc && acc.participants || []).map(p => p.contactId).filter(Boolean));
         const q = app.normName(document.getElementById('contacts-search').value);
         const lista = store.contacts.filter(c => !q || app.normName(c.name).includes(q));
 
@@ -2811,7 +2832,7 @@ const app = {
         }
 
         lista.forEach(c => {
-            const dentro = yaEstan.has(app.normName(c.name));
+            const dentro = vinculados.has(c.id);
             const el = document.createElement('button');
             el.disabled = dentro;
             el.className = 'w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ' +
@@ -2835,9 +2856,17 @@ const app = {
         const acc = store.accounts.find(a => a.id === store.currentAccountId);
         if (!c || !acc) return;
         if (!acc.participants) acc.participants = [];
-        if (acc.participants.some(p => app.normName(p.name) === app.normName(c.name))) return;
+        if (acc.participants.some(p => p.contactId === c.id)) return;
+        // Aunque sean personas distintas, dos nombres iguales en una cuenta
+        // romperían el reparto: los gastos guardan el nombre de quien pagó.
+        if (app.nameTaken(acc, c.name)) {
+            return utils.showToast(`Ya hay alguien llamado ${c.name} en esta cuenta`);
+        }
 
-        acc.participants.push({ id: utils.generateId(), name: c.name, bank: c.bank || '', cbu: c.cbu || '' });
+        acc.participants.push({
+            id: utils.generateId(), name: c.name,
+            bank: c.bank || '', cbu: c.cbu || '', contactId: c.id
+        });
         utils.save();
         app.renderAccount();
         app.renderContactsPicker();
