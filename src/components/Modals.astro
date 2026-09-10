@@ -1,7 +1,7 @@
 <!-- Export Modal -->
-<div id="modal-export" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-export" data-close="closeExportModal" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-export-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeExportModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 class="text-xl font-bold mb-4 text-content">Exportar Detalle</h2>
         <div class="space-y-3">
             <button id="export-share-btn" class="w-full flex items-center gap-4 p-4 rounded-xl bg-content/5 hover:bg-content/10 transition group">
@@ -49,9 +49,9 @@
 </div>
 
 <!-- Add Account -->
-<div id="modal-add-account" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-add-account" data-close="closeAddAccountModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-add-account-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeAddAccountModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 id="add-account-title" class="text-xl font-bold mb-4">Nueva Cuenta</h2>
         <div class="space-y-4">
             <input type="text" id="new-account-name" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Nombre (ej. Playa)">
@@ -66,22 +66,58 @@
     </div>
 </div>
 
-<!-- Add Participant -->
-<div id="modal-add-participant" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-    <div class="bg-surface w-full max-w-sm rounded-2xl p-6 transform scale-95 transition-transform duration-200" id="modal-add-participant-panel">
-        <h3 class="text-lg font-bold mb-4 text-content">Nuevo Participante</h3>
-        <input type="text" id="part-name" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content" placeholder="Nombre (ej. Juan)">
-        <div class="flex gap-3">
+<!-- Participante: crear, editar y borrar -->
+<div id="modal-add-participant" data-close="closeAddParticipantModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-surface w-full max-w-sm rounded-2xl p-6 transform scale-95 transition-transform duration-200 max-h-[90vh] overflow-y-auto" id="modal-add-participant-panel">
+        <h3 id="part-title" class="text-lg font-bold mb-4 text-content">Nuevo Participante</h3>
+        <input type="text" id="part-name" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content" placeholder="Nombre (ej. Juan)">
+
+        <details id="part-advanced" class="group mt-3 rounded-xl border border-line overflow-hidden">
+            <summary class="flex items-center gap-2 p-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <i data-lucide="landmark" class="w-4 h-4 text-muted shrink-0"></i>
+                <span class="text-sm font-bold text-content flex-1">Avanzado</span>
+                <span class="text-[10px] text-muted">Datos para transferirle</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-muted shrink-0 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-3 pt-0 space-y-3">
+                <input type="text" id="part-bank" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content" placeholder="Banco (ej. Galicia)">
+                <input type="text" id="part-cbu" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content" placeholder="CBU o Alias">
+                <label id="part-save-contact-row" class="flex items-center gap-2 p-2 rounded-lg bg-content/5 border border-line cursor-pointer">
+                    <input type="checkbox" id="part-save-contact" class="w-5 h-5 rounded text-primary focus:ring-primary">
+                    <span class="text-sm text-content flex-1">Guardar en frecuentes</span>
+                </label>
+                <p class="text-[10px] text-muted italic">Los frecuentes se reusan en otras cuentas y se gestionan desde Configuración.</p>
+            </div>
+        </details>
+
+        <div class="flex gap-3 mt-4">
             <button onclick="app.closeAddParticipantModal()" class="flex-1 py-3 text-muted font-medium hover:bg-content/10 rounded-xl transition">Cancelar</button>
-            <button onclick="app.addParticipant()" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:bg-primary/90 transition">Añadir</button>
+            <button id="part-save" onclick="app.saveParticipant()" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:bg-primary/90 transition">Añadir</button>
         </div>
+        <button id="part-delete" onclick="app.deleteParticipant()" class="hidden w-full mt-2 py-3 text-danger font-medium rounded-xl hover:bg-danger/10 transition items-center justify-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar participante
+        </button>
+    </div>
+</div>
+
+<!-- Libreta de frecuentes: elegir a quien sumar a la cuenta -->
+<div id="modal-contacts" data-close="closeContactsModal" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="modal-contacts-panel">
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeContactsModal" aria-hidden="true">
+            <div class="w-12 h-1 bg-content/20 rounded-full"></div>
+        </div>
+        <h2 class="text-xl font-bold text-content">Frecuentes</h2>
+        <p class="text-sm text-muted mb-4">Tócalos para sumarlos a esta cuenta</p>
+        <input type="text" id="contacts-search" oninput="app.renderContactsPicker()" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-content mb-4" placeholder="Buscar…">
+        <div id="contacts-picker" class="space-y-2"></div>
+        <button onclick="app.closeContactsModal()" class="w-full mt-6 text-muted py-3 font-medium">Cerrar</button>
     </div>
 </div>
 
 <!-- Add Expense -->
-<div id="modal-add-expense" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-add-expense" data-close="closeAddExpenseModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-add-expense-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeAddExpenseModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 id="add-expense-title" class="text-xl font-bold mb-4">Nuevo Gasto</h2>
         <div class="space-y-4">
             <input type="text" id="exp-desc" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" placeholder="Descripción (ej. Cervezas)">
@@ -116,9 +152,9 @@
 </div>
 
 <!-- Modal Balances (Resultados) -->
-<div id="modal-balances" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-balances" data-close="closeBalancesModal" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto flex flex-col" id="modal-balances-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden shrink-0"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeBalancesModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         
         <div class="flex justify-between items-start mb-6 shrink-0">
             <div>
@@ -142,9 +178,9 @@
 </div>
 
 <!-- Mover cuentas a una carpeta -->
-<div id="modal-move" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-move" data-close="closeMoveModal" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modal-move-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeMoveModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 id="move-title" class="text-xl font-bold mb-4 text-content">Mover a…</h2>
         <div id="move-list" class="space-y-3 max-h-[50vh] overflow-y-auto"></div>
         <button onclick="app.closeMoveModal()" class="w-full mt-6 text-muted py-3 font-medium">Cancelar</button>
@@ -152,7 +188,7 @@
 </div>
 
 <!-- Pedir un texto (renombrar carpeta, nombrar una carpeta nueva) -->
-<div id="modal-prompt" class="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+<div id="modal-prompt" data-close="closePrompt" class="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
     <div class="bg-surface w-full max-w-sm rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-200" id="modal-prompt-panel">
         <h3 id="prompt-title" class="text-lg font-bold mb-4 text-content">Nombre</h3>
         <input type="text" id="prompt-input" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content" placeholder="Nombre">
@@ -164,9 +200,9 @@
 </div>
 
 <!-- Editor de tema: sirve para crear y para editar -->
-<div id="modal-theme" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-theme" data-close="closeThemeModal" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="modal-theme-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeThemeModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 id="theme-modal-title" class="text-xl font-bold mb-4 text-content">Nuevo Tema</h2>
         <input type="text" id="theme-name" placeholder="Nombre del tema" aria-label="Nombre del tema" class="w-full bg-content/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary mb-4 text-content">
         <div id="theme-colors" class="space-y-2"></div>
@@ -176,9 +212,9 @@
 </div>
 
 <!-- Compartir cuenta o carpeta -->
-<div id="modal-share" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
+<div id="modal-share" data-close="closeShareModal" class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center sm:p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-surface w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto" id="modal-share-panel">
-        <div class="w-12 h-1 bg-content/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+        <div class="sheet-grab -mx-6 -mt-6 mb-4 pt-3 pb-3 flex items-start justify-center sm:hidden" data-close="closeShareModal" aria-hidden="true"><div class="w-12 h-1 bg-content/20 rounded-full"></div></div>
         <h2 id="share-title" class="text-xl font-bold text-content">Compartir</h2>
         <p id="share-sub" class="text-sm text-muted mb-4">&nbsp;</p>
 
@@ -237,7 +273,7 @@
     <span id="toast-msg">Mensaje</span>
 </div>
 
-<div id="modal-confirm" class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+<div id="modal-confirm" data-close="closeConfirm" class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
     <div class="bg-surface rounded-2xl shadow-2xl max-w-sm w-full p-6 transform scale-95 transition-transform duration-200" id="modal-panel">
         <div class="w-12 h-12 rounded-full bg-danger/15 flex items-center justify-center mb-4 text-danger">
             <i data-lucide="alert-triangle" class="w-6 h-6"></i>
