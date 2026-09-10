@@ -1,5 +1,6 @@
 <div id="view-account" class="view hidden flex-col h-full flex w-full bg-base">
-    <header class="bg-surface px-4 py-4 shadow-sm flex items-center justify-between z-10 shrink-0">
+    <header class="bg-surface pt-safe-top px-4 pb-4 shadow-sm z-10 shrink-0">
+        <div class="flex items-center justify-between pt-4">
         <div class="flex items-center gap-3">
             <button onclick="app.navigate('home')" class="p-2 -ml-2 rounded-full hover:bg-content/10">
                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
@@ -18,6 +19,7 @@
             <button onclick="app.deleteCurrentAccount()" class="p-2 rounded-full hover:bg-red-50 text-muted hover:text-danger hover:bg-danger/10 transition">
                 <i data-lucide="trash-2" class="w-5 h-5"></i>
             </button>
+        </div>
         </div>
     </header>
 
@@ -48,15 +50,20 @@
         <div>
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-lg text-content">Participantes</h3>
-                <button onclick="app.showAddParticipantModal()" class="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+                <div class="flex items-center">
+                <button onclick="app.showContactsModal()" class="text-muted text-sm font-medium hover:text-primary flex items-center gap-1 mr-3">
+                        <i data-lucide="users" class="w-4 h-4"></i> Frecuentes
+                    </button>
+                    <button onclick="app.showAddParticipantModal()" class="text-primary text-sm font-medium hover:underline flex items-center gap-1">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Agregar
-                </button>
+                    </button>
+                </div>
             </div>
             <!-- pt-2 para dar espacio al botón de borrar -->
             <div id="acc-participants" class="flex gap-2 overflow-x-auto py-2 hide-scrollbar">
                 <!-- Se llena con JS -->
             </div>
-            <p class="text-[10px] text-muted mt-1 italic px-1">Toca un participante para eliminarlo</p>
+            <p class="text-[10px] text-muted mt-1 italic px-1">Toca un participante para editarlo o eliminarlo</p>
         </div>
 
         <!-- Sección Gastos y Pagos -->
