@@ -39,6 +39,12 @@ const base = import.meta.env.BASE_URL;
                     var v = rgb(colors[k]);
                     if (v) root.style.setProperty('--c-' + k, v.join(' '));
                 }
+                ['primary', 'secondary', 'frequent'].forEach(function (k) {
+                    var c = rgb(colors[k]);
+                    if (!c) return;
+                    var l = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+                    root.style.setProperty('--c-on-' + k, l > 0.45 ? '17 24 39' : '255 255 255');
+                });
                 var b = rgb(colors.base);
                 if (b) {
                     var lum = (0.2126 * b[0] + 0.7152 * b[1] + 0.0722 * b[2]) / 255;
