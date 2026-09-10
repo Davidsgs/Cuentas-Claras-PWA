@@ -6,6 +6,7 @@ import {
   Calculator,
   Check,
   CheckCircle2,
+  ChevronDown,
   CornerUpLeft,
   Download,
   File as FileIcon,
@@ -14,9 +15,11 @@ import {
   FolderPlus,
   Image as ImageIcon,
   Info,
-  Moon,
-  Pencil,
+  Landmark,
   Link,
+  Moon,
+  Palette,
+  Pencil,
   Plus,
   PlusCircle,
   QrCode,
@@ -24,21 +27,27 @@ import {
   RotateCcw,
   Settings,
   Share2,
+  Star,
   Sun,
+  Tag,
   Trash2,
   Upload,
   User,
+  Users,
   X,
 } from 'lucide';
 
 // Solo los iconos que usa la app: importar el set completo son ~600 KB.
 const usedIcons = {
   AlertTriangle, ArrowLeft, ArrowRight, Calculator, Check, CheckCircle2,
-  CornerUpLeft, Download, File: FileIcon, FileText, Folder, FolderPlus,
+  ChevronDown, CornerUpLeft, Download, File: FileIcon, FileText, Folder,
+  FolderPlus,
   Image: ImageIcon,
-  Info, Link, Moon, Pencil, Plus, PlusCircle, QrCode, Receipt, RotateCcw,
-  Settings, Share2,
-  Sun, Trash2, Upload, User, X,
+  Info, Landmark, Link, Moon, Palette, Pencil, Plus, PlusCircle, QrCode,
+  Receipt,
+  RotateCcw, Tag,
+  Settings, Share2, Star,
+  Sun, Trash2, Upload, User, Users, X,
 };
 
 // Mismo shim que exponía el CDN, para no tocar las llamadas de abajo.
@@ -52,7 +61,7 @@ const defaultCategories = [
     { id: 5, name: 'Ocio', emoji: '🎉' }
 ];
 
-const THEME_KEYS = ['primary', 'secondary', 'base', 'surface', 'content', 'muted', 'line'];
+const THEME_KEYS = ['primary', 'secondary', 'base', 'surface', 'content', 'muted', 'line', 'frequent'];
 
 const themeLabels = {
     primary:   ['Primario', 'Botones, enlaces y acentos'],
@@ -61,25 +70,26 @@ const themeLabels = {
     surface:   ['Tarjetas', 'Cabeceras, tarjetas y hojas'],
     content:   ['Texto', 'Títulos y texto principal'],
     muted:     ['Texto apagado', 'Subtítulos y ayudas'],
-    line:      ['Bordes', 'Líneas y separadores']
+    line:      ['Bordes', 'Líneas y separadores'],
+    frequent:  ['Frecuentes', 'Marca a la gente de tu libreta']
 };
 
 const factoryThemes = [
     { id: 'light', name: 'Tema Claro', colors: {
         primary: '#4F46E5', secondary: '#10B981', base: '#F9FAFB', surface: '#FFFFFF',
-        content: '#111827', muted: '#6B7280', line: '#E5E7EB' } },
+        content: '#111827', muted: '#6B7280', line: '#E5E7EB', frequent: '#7C3AED' } },
     { id: 'dark', name: 'Tema Oscuro', colors: {
         primary: '#4F46E5', secondary: '#10B981', base: '#111827', surface: '#1F2937',
-        content: '#F3F4F6', muted: '#9CA3AF', line: '#374151' } },
+        content: '#F3F4F6', muted: '#9CA3AF', line: '#374151', frequent: '#A78BFA' } },
     { id: 'contrast', name: 'Alto Contraste', colors: {
         primary: '#FFD400', secondary: '#00E676', base: '#000000', surface: '#0D0D0D',
-        content: '#FFFFFF', muted: '#D4D4D4', line: '#8A8A8A' } },
+        content: '#FFFFFF', muted: '#D4D4D4', line: '#8A8A8A', frequent: '#00E5FF' } },
     { id: 'blue', name: 'Tema Azul', colors: {
         primary: '#3B82F6', secondary: '#22D3EE', base: '#0B1220', surface: '#132033',
-        content: '#E8EFFA', muted: '#94AEC9', line: '#27394F' } },
+        content: '#E8EFFA', muted: '#94AEC9', line: '#27394F', frequent: '#F472B6' } },
     { id: 'red', name: 'Tema Rojo', colors: {
         primary: '#E11D48', secondary: '#F59E0B', base: '#1A0B10', surface: '#2B131C',
-        content: '#FDE8EC', muted: '#C68C99', line: '#4C2432' } }
+        content: '#FDE8EC', muted: '#C68C99', line: '#4C2432', frequent: '#38BDF8' } }
 ];
 
 const cloneFactory = () => factoryThemes.map(t => ({ id: t.id, name: t.name, colors: { ...t.colors } }));
@@ -127,9 +137,16 @@ const store = {
     accounts: JSON.parse(localStorage.getItem('cc_accounts')) || [],
     categories: JSON.parse(localStorage.getItem('cc_categories')) || defaultCategories,
     folders: JSON.parse(localStorage.getItem('cc_folders')) || [],
+    // Libreta global de gente frecuente: { id, name, bank, cbu }
+    contacts: JSON.parse(localStorage.getItem('cc_contacts')) || [],
     themes: loadThemes(),
     currentAccountId: null,
     currentFolderId: null,
+    editingAccountId: null,
+    // Participante que se está editando: { id } o null al crear uno nuevo.
+    editingParticipantId: null,
+    // Frecuente que se está editando desde Configuración.
+    editingContactId: null,
     editingExpenseId: null,
     // null = fuera del modo selección; Set de ids de cuenta cuando está activo.
     selection: null,
@@ -149,6 +166,7 @@ const utils = {
         localStorage.setItem('cc_accounts', JSON.stringify(store.accounts));
         localStorage.setItem('cc_categories', JSON.stringify(store.categories));
         localStorage.setItem('cc_folders', JSON.stringify(store.folders));
+        localStorage.setItem('cc_contacts', JSON.stringify(store.contacts));
         localStorage.setItem('cc_themes', JSON.stringify(store.themes));
         localStorage.setItem('cc_theme_id', store.themeId);
     },
@@ -236,6 +254,10 @@ const app = {
         lucide.createIcons();
         app.checkIncomingShare();
         app.announceUpdate();
+        app.bindSheetDrag();
+        app.bindBackdropClose();
+        history.replaceState({ capa: 0 }, '');
+        window.addEventListener('popstate', () => app.nav.atras());
         // Si la app ya estaba abierta, abrir un enlace compartido solo cambia el
         // hash y no recarga el documento: sin esto el enlace no haría nada.
         window.addEventListener('hashchange', () => app.checkIncomingShare());
@@ -254,8 +276,13 @@ const app = {
         document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
         document.getElementById(`view-${viewId}`).classList.remove('hidden');
         window.scrollTo(0, 0);
-        if (viewId === 'settings') app.renderSettings();
-        if (viewId === 'home') { store.selection = null; app.renderHome(); }
+        if (viewId === 'settings') { app.nav.abrir('vista', () => app.navigate('home')); app.renderSettings(); }
+        if (viewId === 'home') {
+            app.nav.cerrada('vista');
+            app.nav.cerrada('seleccion');
+            store.selection = null;
+            app.renderHome();
+        }
     },
 
     // --- FILTRO POR CATEGORÍA ---
@@ -319,6 +346,7 @@ const app = {
         });
         root.style.setProperty('--c-on-primary', utils.contrastOn(palette.primary));
         root.style.setProperty('--c-on-secondary', utils.contrastOn(palette.secondary));
+        root.style.setProperty('--c-on-frequent', utils.contrastOn(palette.frequent));
         // La clase .dark ya no pinta nada (todo va por variables), pero define
         // color-scheme para que los selectores nativos de fecha y color no
         // salgan blancos sobre un tema oscuro.
@@ -329,6 +357,7 @@ const app = {
 
     // --- CONFIRMATION ---
     confirmAction: (message, callback, okLabel) => {
+        app.nav.abrir('confirm', () => app.closeConfirm());
         const modal = document.getElementById('modal-confirm');
         const panel = document.getElementById('modal-panel');
         const btnYes = document.getElementById('modal-btn-yes');
@@ -343,6 +372,7 @@ const app = {
         setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('scale-95'); panel.classList.add('scale-100'); }, 10);
     },
     closeConfirm: () => {
+        app.nav.cerrada('confirm');
         const modal = document.getElementById('modal-confirm');
         const panel = document.getElementById('modal-panel');
         modal.classList.add('opacity-0');
@@ -445,7 +475,19 @@ const app = {
     },
 
     // --- EXPORT LOGIC ---
+    // Datos bancarios de la cuenta, o null si nadie cargó ninguno: en ese caso
+    // la sección no se agrega a ningún export.
+    bankRows: (acc) => {
+        const gente = acc.participants || [];
+        if (!gente.some(p => (p.bank || '').trim() || (p.cbu || '').trim())) return null;
+        return gente.map(p => {
+            const datos = [(p.bank || '').trim(), (p.cbu || '').trim()].filter(Boolean).join(' · ');
+            return { name: p.name, datos, definido: !!datos };
+        });
+    },
+
     showExportModal: () => {
+        app.nav.abrir('export', () => app.closeExportModal());
         const btn = document.getElementById('export-share-btn');
         if (btn) btn.onclick = () => { app.closeExportModal(); app.showShareModal('account', store.currentAccountId); };
         const modal = document.getElementById('modal-export');
@@ -454,6 +496,7 @@ const app = {
         setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
     },
     closeExportModal: () => {
+        app.nav.cerrada('export');
         const modal = document.getElementById('modal-export');
         const panel = document.getElementById('modal-export-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
@@ -476,6 +519,15 @@ const app = {
         
         text += `👥 *Participantes:*\n`;
         acc.participants.forEach(p => text += `- ${p.name}\n`);
+
+        // Sección de datos para transferir. Solo si alguien cargó algo.
+        const bancos = app.bankRows(acc);
+        if (bancos) {
+            text += `\n🏦 *Para transferirle a cada uno:*\n`;
+            bancos.forEach(b => {
+                text += b.definido ? `- ${b.name}: ${b.datos}\n` : `- ${b.name}: ⚠️ No Definido\n`;
+            });
+        }
         
         // GASTOS GRUPALES
         if (groupExpenses.length > 0) {
@@ -561,6 +613,21 @@ const app = {
         </div>`;
         
         html += `<div style="margin-bottom: 24px;"><p style="font-weight:bold; margin-bottom:5px;">Participantes:</p><p style="color:#4b5563;">${acc.participants.map(p => p.name).join(', ')}</p></div>`;
+
+        const bancosImg = app.bankRows(acc);
+        if (bancosImg) {
+            html += `<h3 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 16px;">Para transferirle a cada uno</h3>`;
+            bancosImg.forEach(b => {
+                const valor = b.definido
+                    ? `<span style="color:#1f2937;">${b.datos}</span>`
+                    : `<span style="color:#d97706; font-weight:bold;">No Definido</span>`;
+                html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:15px;">
+                    <div style="font-weight:bold;">${b.name}</div>
+                    <div>${valor}</div>
+                </div>`;
+            });
+            html += `<div style="height:14px;"></div>`;
+        }
 
         // SECCIÓN GASTOS GRUPALES
         if (groupExpenses.length > 0) {
@@ -680,6 +747,39 @@ const app = {
         const splitText = doc.splitTextToSize(participantsStr, 170);
         doc.text(splitText, 55, y);
         y += (splitText.length * 7) + 10;
+
+        const bancosPdf = app.bankRows(acc);
+        if (bancosPdf) {
+            if (y > 250) { doc.addPage(); y = 20; }
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            doc.text("Para transferirle a cada uno", 20, y);
+            doc.setDrawColor(200);
+            doc.line(20, y + 2, 190, y + 2);
+            y += 12;
+
+            doc.setFontSize(11);
+            bancosPdf.forEach(b => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(0);
+                doc.text(b.name, 20, y);
+                if (b.definido) {
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(60);
+                    doc.text(doc.splitTextToSize(b.datos, 110)[0], 70, y);
+                } else {
+                    // Ámbar, igual que en la imagen: se ve que falta el dato.
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(217, 119, 6);
+                    doc.text("No Definido", 70, y);
+                }
+                y += 8;
+            });
+            doc.setTextColor(0);
+            y += 7;
+        }
 
         // --- GASTOS GRUPALES PDF ---
         if (groupExpenses.length > 0) {
@@ -851,8 +951,20 @@ const app = {
         return `Grupo Nro. ${n}`;
     },
 
-    openFolder: (id) => { store.currentFolderId = id; store.selection = null; app.renderHome(); },
-    exitFolder: () => { store.currentFolderId = null; store.selection = null; app.renderHome(); },
+    openFolder: (id) => {
+        app.nav.cerrada('seleccion');
+        app.nav.abrir('carpeta', () => app.exitFolder());
+        store.currentFolderId = id;
+        store.selection = null;
+        app.renderHome();
+    },
+    exitFolder: () => {
+        app.nav.cerrada('carpeta');
+        app.nav.cerrada('seleccion');
+        store.currentFolderId = null;
+        store.selection = null;
+        app.renderHome();
+    },
 
     renameFolder: (id, event) => {
         if (event) event.stopPropagation();
@@ -885,10 +997,11 @@ const app = {
     },
 
     enterSelection: (id) => {
+        app.nav.abrir('seleccion', () => app.exitSelection());
         store.selection = new Set(id ? [id] : []);
         app.renderHome();
     },
-    exitSelection: () => { store.selection = null; app.renderHome(); },
+    exitSelection: () => { app.nav.cerrada('seleccion'); store.selection = null; app.renderHome(); },
 
     toggleSelect: (id) => {
         if (!store.selection) return;
@@ -917,6 +1030,7 @@ const app = {
         const n = ids.size;
         store.accounts.forEach(a => { if (ids.has(a.id)) a.folderId = folderId; });
         utils.save();
+        app.nav.cerrada('seleccion');
         store.selection = null;
         app.renderHome();
         const target = folderId
@@ -932,6 +1046,7 @@ const app = {
         app.confirmAction(`Se borrarán ${n} ${n === 1 ? 'cuenta' : 'cuentas'} con todos sus gastos y participantes.`, () => {
             store.accounts = store.accounts.filter(a => !ids.has(a.id));
             utils.save();
+            app.nav.cerrada('seleccion');
             store.selection = null;
             app.renderHome();
             utils.showToast(`${n} ${n === 1 ? 'cuenta eliminada' : 'cuentas eliminadas'}`);
@@ -940,6 +1055,7 @@ const app = {
 
     // --- MOVER A CARPETA (hoja) ---
     showMoveModal: () => {
+        app.nav.abrir('mover', () => app.closeMoveModal());
         if (!store.selection || store.selection.size === 0) return utils.showToast('No hay cuentas seleccionadas');
         const n = store.selection.size;
         document.getElementById('move-title').innerText = `Mover ${n} ${n === 1 ? 'cuenta' : 'cuentas'} a…`;
@@ -989,6 +1105,7 @@ const app = {
     },
 
     closeMoveModal: () => {
+        app.nav.cerrada('mover');
         const modal = document.getElementById('modal-move');
         const panel = document.getElementById('modal-move-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
@@ -997,6 +1114,7 @@ const app = {
 
     // --- PROMPT DE TEXTO ---
     promptText: (title, value, callback) => {
+        app.nav.abrir('prompt', () => app.closePrompt());
         const modal = document.getElementById('modal-prompt');
         const panel = document.getElementById('modal-prompt-panel');
         const input = document.getElementById('prompt-input');
@@ -1021,6 +1139,7 @@ const app = {
         }, 10);
     },
     closePrompt: () => {
+        app.nav.cerrada('prompt');
         const modal = document.getElementById('modal-prompt');
         const panel = document.getElementById('modal-prompt-panel');
         modal.classList.add('opacity-0');
@@ -1283,6 +1402,7 @@ const app = {
 
     // --- ACCOUNT DETAIL ---
     openAccount: (id) => {
+        app.nav.abrir('vista', () => app.navigate('home'));
         store.currentAccountId = id;
         app.renderAccount();
         app.navigate('account');
@@ -1330,19 +1450,21 @@ const app = {
             partList.appendChild(renderAddBtn());
         } else {
             acc.participants.forEach(p => {
+                // El color de frecuentes distingue de un vistazo a la gente de
+                // la libreta; se decide por nombre, así también aplica a
+                // participantes cargados antes de existir la libreta.
+                const frecuente = app.isFrequent(p.name);
                 const el = document.createElement('div');
                 el.className = 'flex flex-col items-center gap-1 min-w-[60px] cursor-pointer group relative';
-                el.onclick = () => app.confirmDeleteParticipant(p.id, p.name);
+                el.onclick = () => app.showAddParticipantModal(p.id);
                 el.innerHTML = `
                     <div class="relative w-10 h-10">
-                        <div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shadow-sm border-2 border-surface">
-                            ${p.name.substring(0,2).toUpperCase()}
+                        <div class="w-10 h-10 rounded-full ${frecuente ? 'bg-frequent text-on-frequent' : 'bg-primary text-on-primary'} flex items-center justify-center font-bold text-sm shadow-sm border-2 border-surface">
+                            ${app.initials(p.name)}
                         </div>
-                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition shadow-sm border border-base">
-                            <i data-lucide="x" class="w-2 h-2"></i>
-                        </div>
+                        ${frecuente ? '<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-frequent rounded-full flex items-center justify-center text-on-frequent shadow-sm border border-surface"><i data-lucide="star" class="w-2 h-2"></i></div>' : ''}
                     </div>
-                    <span class="text-[10px] text-muted truncate w-full text-center group-hover:text-danger transition">${p.name}</span>
+                    <span class="text-[10px] truncate w-full text-center transition ${frecuente ? 'text-frequent font-bold' : 'text-muted'}">${p.name}</span>
                 `;
                 partList.appendChild(el);
             });
@@ -1440,25 +1562,6 @@ const app = {
     },
 
     // --- PARTICIPANT DELETION ---
-    confirmDeleteParticipant: (id, name) => {
-        const acc = store.accounts.find(a => a.id === store.currentAccountId);
-        if (!acc) return;
-
-        const hasExpenses = acc.expenses && acc.expenses.some(e => e.payer === name);
-        const hasPayments = acc.payments && acc.payments.some(p => p.from === name || p.to === name);
-
-        if (hasExpenses || hasPayments) {
-            utils.showToast("No se puede borrar: tiene gastos asociados");
-            return;
-        }
-
-        app.confirmAction(`¿Borrar a ${name}?`, () => {
-            acc.participants = acc.participants.filter(p => p.id !== id);
-            utils.save();
-            app.renderAccount();
-            utils.showToast("Participante eliminado");
-        });
-    },
 
     // --- CALCULATE BALANCES ---
     calculateBalances: () => {
@@ -1476,6 +1579,7 @@ const app = {
     },
 
     showBalancesModal: (transactions, share) => {
+        app.nav.abrir('balances', () => app.closeBalancesModal());
         const modal = document.getElementById('modal-balances');
         const panel = document.getElementById('modal-balances-panel');
         const list = document.getElementById('bal-list');
@@ -1526,6 +1630,7 @@ const app = {
     },
 
     closeBalancesModal: () => {
+        app.nav.cerrada('balances');
         const modal = document.getElementById('modal-balances');
         const panel = document.getElementById('modal-balances-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
@@ -1534,6 +1639,7 @@ const app = {
 
     // --- HELPERS & INIT ---
     showAddAccountModal: () => {
+        app.nav.abrir('cuenta', () => app.closeAddAccountModal());
         const modal = document.getElementById('modal-add-account');
         const panel = document.getElementById('modal-add-account-panel');
         const select = document.getElementById('new-account-cat');
@@ -1560,6 +1666,7 @@ const app = {
         document.getElementById('add-account-submit').innerText = 'Guardar';
     },
     closeAddAccountModal: () => {
+        app.nav.cerrada('cuenta');
         const modal = document.getElementById('modal-add-account');
         const panel = document.getElementById('modal-add-account-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
@@ -1567,6 +1674,7 @@ const app = {
     },
     
     showAddExpenseModal: () => {
+        app.nav.abrir('gasto', () => app.closeAddExpenseModal());
         const acc = store.accounts.find(a => a.id === store.currentAccountId);
         if (!acc.participants || acc.participants.length === 0) {
             utils.showToast("Primero añade participantes");
@@ -1599,6 +1707,7 @@ const app = {
         setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
     },
     closeAddExpenseModal: () => {
+        app.nav.cerrada('gasto');
         const modal = document.getElementById('modal-add-expense');
         const panel = document.getElementById('modal-add-expense-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
@@ -1714,6 +1823,7 @@ const app = {
         document.getElementById('cat-emoji').value = '';
         app.syncCategoryForm();
         app.renderCategories();
+        app.renderContactsList();
     },
 
     renderThemes: () => {
@@ -1782,6 +1892,7 @@ const app = {
     },
 
     showThemeModal: (id, event) => {
+        app.nav.abrir('tema', () => app.closeThemeModal());
         if (event) event.stopPropagation();
         const existing = id ? store.themes.find(t => t.id === id) : null;
         if (id && !existing) return;
@@ -1877,12 +1988,101 @@ const app = {
     },
 
     closeThemeModal: () => {
+        app.nav.cerrada('tema');
         store.themeDraft = null;
         app.applyTheme();   // descarta la vista previa en vivo
         const modal = document.getElementById('modal-theme');
         const panel = document.getElementById('modal-theme-panel');
         modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
         setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    // --- NAVEGACION CON EL BOTON ATRAS ---
+    // Cada capa que se abre (vista, carpeta, modal, modo selección) mete una
+    // entrada en el historial. El botón atrás del teléfono cierra la de arriba
+    // en vez de salirse de la app; en la pantalla principal no hay capas, así
+    // que el atrás sale como siempre.
+    nav: {
+        capas: [],      // [{ nombre, cerrar }]
+        saltar: false,
+
+        abrir: (nombre, cerrar) => {
+            app.nav.capas.push({ nombre, cerrar });
+            history.pushState({ capa: app.nav.capas.length }, '');
+        },
+
+        // Se cerró desde la interfaz o por código (guardar, cancelar, la flecha):
+        // hay que sacar también su entrada del historial. Es idempotente por
+        // nombre: si la capa ya no está, no hace nada. Eso permite que el cierre
+        // disparado por el botón atrás llame igual a close*() sin descuadrar nada.
+        cerrada: (nombre) => {
+            for (let i = app.nav.capas.length - 1; i >= 0; i--) {
+                if (app.nav.capas[i].nombre !== nombre) continue;
+                app.nav.capas.splice(i, 1);
+                app.nav.saltar = true;
+                history.back();
+                return;
+            }
+        },
+
+        atras: () => {
+            if (app.nav.saltar) { app.nav.saltar = false; return; }
+            const capa = app.nav.capas.pop();
+            if (capa) capa.cerrar();
+        }
+    },
+
+    // --- ARRASTRAR LAS HOJAS PARA CERRARLAS ---
+    // Se arrastra desde la barrita de arriba. Si se baja más de 90px o se
+    // suelta con impulso, la hoja se cierra; si no, vuelve a su lugar.
+    // Tocar el fondo oscuro cierra el modal. Solo cuenta si el toque cayó en el
+    // contenedor mismo: dentro del panel, e.target es otro elemento.
+    bindBackdropClose: () => {
+        document.querySelectorAll('[id^="modal-"][data-close]').forEach(modal => {
+            if (modal.dataset.fondoListo) return;
+            modal.dataset.fondoListo = '1';
+            modal.addEventListener('click', (e) => {
+                if (e.target !== modal) return;
+                const cerrar = app[modal.dataset.close];
+                if (typeof cerrar === 'function') cerrar();
+            });
+        });
+    },
+
+    bindSheetDrag: () => {
+        document.querySelectorAll('.sheet-grab').forEach(zona => {
+            const panel = zona.closest('[id$="-panel"]');
+            if (!panel || zona.dataset.listo) return;
+            zona.dataset.listo = '1';
+
+            let y0 = 0, dy = 0, t0 = 0, arrastrando = false;
+
+            zona.addEventListener('pointerdown', (e) => {
+                arrastrando = true; y0 = e.clientY; dy = 0; t0 = Date.now();
+                zona.setPointerCapture(e.pointerId);
+                panel.classList.add('sheet-dragging');
+            });
+
+            zona.addEventListener('pointermove', (e) => {
+                if (!arrastrando) return;
+                dy = Math.max(0, e.clientY - y0);   // solo hacia abajo
+                panel.style.transform = `translateY(${dy}px)`;
+            });
+
+            const soltar = () => {
+                if (!arrastrando) return;
+                arrastrando = false;
+                panel.classList.remove('sheet-dragging');
+                const rapido = dy > 20 && (Date.now() - t0) < 300;
+                panel.style.transform = '';
+                if (dy > 90 || rapido) {
+                    const cerrar = app[zona.dataset.close];
+                    if (typeof cerrar === 'function') cerrar();
+                }
+            };
+            zona.addEventListener('pointerup', soltar);
+            zona.addEventListener('pointercancel', soltar);
+        });
     },
 
     // --- ACTUALIZACIONES ---
@@ -2023,6 +2223,7 @@ const app = {
     shareCurrentFolder: () => app.showShareModal('folder', store.currentFolderId),
 
     showShareModal: async (kind, id, event) => {
+        app.nav.abrir('compartir', () => app.closeShareModal());
         if (event) event.stopPropagation();
         const payload = app.buildSharePayload(kind, id);
         if (!payload) return utils.showToast('No hay nada para compartir');
@@ -2058,6 +2259,7 @@ const app = {
     },
 
     closeShareModal: () => {
+        app.nav.cerrada('compartir');
         store.share = null;
         const modal = document.getElementById('modal-share');
         const panel = document.getElementById('modal-share-panel');
@@ -2355,35 +2557,322 @@ const app = {
         });
     },
     // --- PARTICIPANTS ---
-    showAddParticipantModal: () => {
-        const modal = document.getElementById('modal-add-participant');
-        const panel = document.getElementById('modal-add-participant-panel');
-        const input = document.getElementById('part-name');
-        input.value = '';
-        modal.classList.remove('hidden');
-        setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('scale-95'); panel.classList.add('scale-100'); input.focus(); }, 10);
+    // ---- Libreta de frecuentes (global, se gestiona en Configuración) ----
+    // Se compara por nombre normalizado: si "Ana" está en la libreta, toda "Ana"
+    // de cualquier cuenta se pinta como frecuente. Es lo que hace que el color
+    // signifique algo sin tener que re-vincular participantes viejos.
+    normName: (name) => String(name || '').trim().toLowerCase(),
+
+    isFrequent: (name) => {
+        const n = app.normName(name);
+        return !!n && store.contacts.some(c => app.normName(c.name) === n);
     },
-    closeAddParticipantModal: () => {
+
+    findContact: (name) => {
+        const n = app.normName(name);
+        return store.contacts.find(c => app.normName(c.name) === n) || null;
+    },
+
+    // ---- Modal de participante ----
+    showAddParticipantModal: (participantId) => {
+        const acc = store.accounts.find(a => a.id === store.currentAccountId);
+        if (!acc) return;
+        const editando = participantId
+            ? (acc.participants || []).find(p => p.id === participantId)
+            : null;
+        if (participantId && !editando) return;
+
+        app.nav.abrir('participante', () => app.closeAddParticipantModal());
+        store.editingParticipantId = editando ? editando.id : null;
+        store.editingContactId = null;
+
+        document.getElementById('part-title').innerText = editando ? 'Editar Participante' : 'Nuevo Participante';
+        document.getElementById('part-name').value = editando ? editando.name : '';
+        document.getElementById('part-bank').value = (editando && editando.bank) || '';
+        document.getElementById('part-cbu').value = (editando && editando.cbu) || '';
+        document.getElementById('part-save').innerText = editando ? 'Guardar' : 'Añadir';
+        document.getElementById('part-save-contact').checked = editando ? app.isFrequent(editando.name) : false;
+        document.getElementById('part-save-contact-row').classList.remove('hidden');
+
+        const borrar = document.getElementById('part-delete');
+        borrar.classList.toggle('hidden', !editando);
+        borrar.classList.toggle('flex', !!editando);
+
+        // Si ya trae datos bancarios conviene mostrarlos abiertos.
+        document.getElementById('part-advanced').open = !!(editando && (editando.bank || editando.cbu));
+
         const modal = document.getElementById('modal-add-participant');
         const panel = document.getElementById('modal-add-participant-panel');
-        modal.classList.add('opacity-0'); panel.classList.remove('scale-100'); panel.classList.add('scale-95');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            panel.classList.remove('scale-95'); panel.classList.add('scale-100');
+            document.getElementById('part-name').focus();
+        }, 10);
+        lucide.createIcons();
+    },
+
+    // Editar un frecuente desde Configuración usa el mismo formulario.
+    showContactEditor: (contactId) => {
+        const editando = contactId ? store.contacts.find(c => c.id === contactId) : null;
+        if (contactId && !editando) return;
+
+        app.nav.abrir('participante', () => app.closeAddParticipantModal());
+        store.editingParticipantId = null;
+        store.editingContactId = editando ? editando.id : 'nuevo';
+
+        document.getElementById('part-title').innerText = editando ? 'Editar Frecuente' : 'Nuevo Frecuente';
+        document.getElementById('part-name').value = editando ? editando.name : '';
+        document.getElementById('part-bank').value = (editando && editando.bank) || '';
+        document.getElementById('part-cbu').value = (editando && editando.cbu) || '';
+        document.getElementById('part-save').innerText = editando ? 'Guardar' : 'Crear';
+        // Acá ya estás editando la libreta: la casilla no tiene sentido.
+        document.getElementById('part-save-contact-row').classList.add('hidden');
+        document.getElementById('part-advanced').open = true;
+
+        const borrar = document.getElementById('part-delete');
+        borrar.classList.toggle('hidden', !editando);
+        borrar.classList.toggle('flex', !!editando);
+
+        const modal = document.getElementById('modal-add-participant');
+        const panel = document.getElementById('modal-add-participant-panel');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            panel.classList.remove('scale-95'); panel.classList.add('scale-100');
+            document.getElementById('part-name').focus();
+        }, 10);
+        lucide.createIcons();
+    },
+
+    closeAddParticipantModal: () => {
+        app.nav.cerrada('participante');
+        store.editingParticipantId = null;
+        store.editingContactId = null;
+        const modal = document.getElementById('modal-add-participant');
+        const panel = document.getElementById('modal-add-participant-panel');
+        modal.classList.add('opacity-0');
+        panel.classList.remove('scale-100'); panel.classList.add('scale-95');
         setTimeout(() => modal.classList.add('hidden'), 200);
     },
-    addParticipant: () => {
-        const nameInput = document.getElementById('part-name');
-        const name = nameInput.value.trim();
-        if (name) {
-            const acc = store.accounts.find(a => a.id === store.currentAccountId);
-            if (!acc.participants) acc.participants = [];
-            acc.participants.push({ id: utils.generateId(), name: name });
+
+    saveParticipant: () => {
+        const name = document.getElementById('part-name').value.trim();
+        const bank = document.getElementById('part-bank').value.trim();
+        const cbu = document.getElementById('part-cbu').value.trim();
+        if (!name) return utils.showToast('Escribe un nombre');
+
+        // --- modo libreta ---
+        if (store.editingContactId) {
+            const otro = store.contacts.find(c => app.normName(c.name) === app.normName(name)
+                                              && c.id !== store.editingContactId);
+            if (otro) return utils.showToast('Ya tienes un frecuente con ese nombre');
+
+            if (store.editingContactId === 'nuevo') {
+                store.contacts.push({ id: utils.generateId(), name, bank, cbu });
+                utils.showToast(`${name} guardado en frecuentes`);
+            } else {
+                const c = store.contacts.find(x => x.id === store.editingContactId);
+                if (c) { c.name = name; c.bank = bank; c.cbu = cbu; }
+                utils.showToast('Frecuente actualizado');
+            }
+            utils.save();
+            app.renderContactsList();
+            app.renderAccount();
+            app.closeAddParticipantModal();
+            return;
+        }
+
+        // --- modo participante de una cuenta ---
+        const acc = store.accounts.find(a => a.id === store.currentAccountId);
+        if (!acc) return;
+        if (!acc.participants) acc.participants = [];
+
+        const editando = store.editingParticipantId
+            ? acc.participants.find(p => p.id === store.editingParticipantId)
+            : null;
+
+        const repetido = acc.participants.some(p => app.normName(p.name) === app.normName(name)
+                                                && (!editando || p.id !== editando.id));
+        if (repetido) return utils.showToast('Ya hay alguien con ese nombre en la cuenta');
+
+        if (editando) {
+            const anterior = editando.name;
+            editando.name = name;
+            editando.bank = bank;
+            editando.cbu = cbu;
+            // Gastos y pagos referencian por NOMBRE: sin esto, renombrar deja
+            // sus gastos huérfanos y el cálculo de deudas se rompe en silencio.
+            if (anterior !== name) app.renameInAccount(acc, anterior, name);
+        } else {
+            acc.participants.push({ id: utils.generateId(), name, bank, cbu });
+        }
+
+        if (document.getElementById('part-save-contact').checked) app.rememberContact(name, bank, cbu);
+
+        utils.save();
+        app.renderAccount();
+        app.closeAddParticipantModal();
+        utils.showToast(editando ? 'Participante actualizado' : `${name} añadido`);
+    },
+
+    // Propaga un cambio de nombre por todo lo que lo referencia.
+    renameInAccount: (acc, antes, ahora) => {
+        (acc.expenses || []).forEach(e => {
+            if (e.payer === antes) e.payer = ahora;
+            if (e.beneficiary === antes) e.beneficiary = ahora;
+        });
+        (acc.payments || []).forEach(pg => {
+            if (pg.from === antes) pg.from = ahora;
+            if (pg.to === antes) pg.to = ahora;
+        });
+    },
+
+    rememberContact: (name, bank, cbu) => {
+        const existente = app.findContact(name);
+        if (existente) {
+            existente.name = name;
+            existente.bank = bank;
+            existente.cbu = cbu;
+        } else {
+            store.contacts.push({ id: utils.generateId(), name, bank, cbu });
+        }
+    },
+
+    deleteParticipant: () => {
+        // Desde la libreta: borra el frecuente, no toca las cuentas.
+        if (store.editingContactId && store.editingContactId !== 'nuevo') {
+            const c = store.contacts.find(x => x.id === store.editingContactId);
+            if (!c) return;
+            app.confirmAction(`¿Sacar a ${c.name} de tus frecuentes? Las cuentas donde ya está no se tocan.`, () => {
+                store.contacts = store.contacts.filter(x => x.id !== c.id);
+                utils.save();
+                app.renderContactsList();
+                app.renderAccount();
+                app.closeAddParticipantModal();
+                utils.showToast('Sacado de frecuentes');
+            });
+            return;
+        }
+
+        const acc = store.accounts.find(a => a.id === store.currentAccountId);
+        if (!acc || !store.editingParticipantId) return;
+        const p = (acc.participants || []).find(x => x.id === store.editingParticipantId);
+        if (!p) return;
+
+        const tieneGastos = (acc.expenses || []).some(e => e.payer === p.name || e.beneficiary === p.name);
+        const tienePagos = (acc.payments || []).some(pg => pg.from === p.name || pg.to === p.name);
+        if (tieneGastos || tienePagos) return utils.showToast('No se puede borrar: tiene gastos asociados');
+
+        app.confirmAction(`¿Borrar a ${p.name} de esta cuenta?`, () => {
+            acc.participants = acc.participants.filter(x => x.id !== p.id);
             utils.save();
             app.renderAccount();
             app.closeAddParticipantModal();
-            utils.showToast(`${name} añadido`);
-        } else {
-            utils.showToast("Escribe un nombre");
+            utils.showToast('Participante eliminado');
+        });
+    },
+
+    // ---- Hoja para sumar frecuentes a la cuenta ----
+    showContactsModal: () => {
+        app.nav.abrir('frecuentes', () => app.closeContactsModal());
+        document.getElementById('contacts-search').value = '';
+        app.renderContactsPicker();
+        const modal = document.getElementById('modal-contacts');
+        const panel = document.getElementById('modal-contacts-panel');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('translate-y-full'); }, 10);
+    },
+
+    closeContactsModal: () => {
+        app.nav.cerrada('frecuentes');
+        const modal = document.getElementById('modal-contacts');
+        const panel = document.getElementById('modal-contacts-panel');
+        modal.classList.add('opacity-0'); panel.classList.add('translate-y-full');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    },
+
+    renderContactsPicker: () => {
+        const cont = document.getElementById('contacts-picker');
+        if (!cont) return;
+        const acc = store.accounts.find(a => a.id === store.currentAccountId);
+        const yaEstan = new Set((acc && acc.participants || []).map(p => app.normName(p.name)));
+        const q = app.normName(document.getElementById('contacts-search').value);
+        const lista = store.contacts.filter(c => !q || app.normName(c.name).includes(q));
+
+        cont.innerHTML = '';
+        if (!store.contacts.length) {
+            cont.innerHTML = `<div class="text-center py-8 text-muted text-sm bg-content/5 rounded-xl border border-dashed border-line">Todavía no tienes frecuentes.<br>Marca "Guardar en frecuentes" al agregar a alguien.</div>`;
+            return;
         }
-    }
+        if (!lista.length) {
+            cont.innerHTML = `<div class="text-center py-8 text-muted text-sm">Nadie con ese nombre.</div>`;
+            return;
+        }
+
+        lista.forEach(c => {
+            const dentro = yaEstan.has(app.normName(c.name));
+            const el = document.createElement('button');
+            el.disabled = dentro;
+            el.className = 'w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ' +
+                (dentro ? 'border-line bg-content/5 opacity-50' : 'border-frequent/40 bg-frequent/10 hover:bg-frequent/20');
+            el.innerHTML = `
+                <div class="w-10 h-10 shrink-0 rounded-full bg-frequent text-on-frequent flex items-center justify-center font-bold text-sm">${app.initials(c.name)}</div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="font-bold text-sm text-content truncate">${c.name}</h4>
+                    <p class="text-xs truncate ${c.bank || c.cbu ? 'text-muted' : 'text-amber-500'}">${c.bank || c.cbu ? [c.bank, c.cbu].filter(Boolean).join(' · ') : 'No Definido'}</p>
+                </div>
+                ${dentro ? '<span class="text-[10px] text-muted shrink-0">ya está</span>'
+                         : '<i data-lucide="plus" class="w-5 h-5 text-frequent shrink-0"></i>'}`;
+            if (!dentro) el.onclick = () => app.addContactToAccount(c.id);
+            cont.appendChild(el);
+        });
+        lucide.createIcons();
+    },
+
+    addContactToAccount: (contactId) => {
+        const c = store.contacts.find(x => x.id === contactId);
+        const acc = store.accounts.find(a => a.id === store.currentAccountId);
+        if (!c || !acc) return;
+        if (!acc.participants) acc.participants = [];
+        if (acc.participants.some(p => app.normName(p.name) === app.normName(c.name))) return;
+
+        acc.participants.push({ id: utils.generateId(), name: c.name, bank: c.bank || '', cbu: c.cbu || '' });
+        utils.save();
+        app.renderAccount();
+        app.renderContactsPicker();
+        utils.showToast(`${c.name} añadido`);
+    },
+
+    // ---- Lista de frecuentes en Configuración ----
+    renderContactsList: () => {
+        const cont = document.getElementById('contacts-list');
+        if (!cont) return;
+        cont.innerHTML = '';
+        if (!store.contacts.length) {
+            cont.innerHTML = `<div class="text-center py-6 text-muted text-sm">Todavía no tienes frecuentes.</div>`;
+            return;
+        }
+        store.contacts.forEach(c => {
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-between gap-3 p-3 bg-base rounded-xl border border-line';
+            el.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 shrink-0 rounded-full bg-frequent text-on-frequent flex items-center justify-center font-bold text-sm">${app.initials(c.name)}</div>
+                    <div class="min-w-0">
+                        <h4 class="font-medium text-content truncate">${c.name}</h4>
+                        <p class="text-xs truncate ${c.bank || c.cbu ? 'text-muted' : 'text-amber-500'}">${c.bank || c.cbu ? [c.bank, c.cbu].filter(Boolean).join(' · ') : 'No Definido'}</p>
+                    </div>
+                </div>
+                <button onclick="app.showContactEditor('${c.id}')" aria-label="Editar ${c.name}" class="w-10 h-10 shrink-0 flex items-center justify-center text-muted hover:text-primary transition rounded-full hover:bg-primary/10">
+                    <i data-lucide="pencil" class="w-5 h-5"></i>
+                </button>`;
+            cont.appendChild(el);
+        });
+        lucide.createIcons();
+    },
+
+    initials: (name) => String(name || '').trim().substring(0, 2).toUpperCase()
 }; 
 
 // Los handlers en el HTML son onclick="app.x()", así que app vive en window.
